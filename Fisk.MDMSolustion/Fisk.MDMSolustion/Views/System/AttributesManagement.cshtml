@@ -1,0 +1,148 @@
+﻿
+@{
+    ViewData["Title"] = "属性管理";
+    Layout = null;
+}
+
+@*<!DOCTYPE html>
+    <html>
+    <head>
+        <meta name="viewport" content="width=device-width" />
+        <title>属性管理</title>
+        <link href="~/lib/element-ui/theme-chalk/index.css" rel="stylesheet" />
+        <script src="~/lib/jquery/jquery-3.3.1.min.js"></script>
+        <script src="~/lib/Vue/vue.js"></script>
+        <script src="~/lib/element-ui/index.js"></script>
+    </head>
+    <body>*@
+<div id="AttributesVue">
+    @*------------------顶部搜索框---------------*@
+    <el-form :inline="true" class="demo-form-inline" style="margin: 8px 0px; display: flex; justify-content: space-between;">
+        <div>
+            <el-form-item label="模型:" style="margin-bottom: 0px;">
+                <el-select style="margin-left: 2%;" v-model="ModelID" placeholder="请选择模型" clearable @@change="ModelHasChanged">
+                    <el-option v-for="(item,index) in ModelSelectOptions" :key="index" :label="item.name" :value="item.id">
+                    </el-option>
+                </el-select>
+            </el-form-item>
+            <el-form-item label="实体:" style="margin-bottom: 0px;">
+                <el-select style="margin-left: 2%;" v-model="AttributesRuleForm.EntityID" placeholder="请选择实体" clearable @@change="EntityHasChanged">
+                    <el-option v-for="(item,index) in EntitySelectOptions" :key="index" :label="item.name" :value="item.id">
+                    </el-option>
+                </el-select>
+            </el-form-item>
+        </div>
+        <el-form-item style="margin-bottom: 0px;">
+            <el-button size='small' circle style="margin-top: 10%" @@click="AddAttributes" type="primary" title="新建" icon="el-icon-plus"></el-button>
+        </el-form-item>
+    </el-form>
+    @*------------------table表格---------------*@
+    <el-row>
+        <el-table :header-cell-style="headerClass"
+                  :data="AttributestableData"
+                  style="width: 100%; overflow-y: auto;"
+                  height="calc(100vh - 178px)"
+                  v-loading.fullscreen.lock="AttributesTabLoading"
+                  element-loading-text="加载中......"
+                  element-loading-background="rgba(255, 255, 255, 0.75)">
+            <el-table-column prop="name" label="英文姓名" align="center" show-overflow-tooltip>
+            </el-table-column>
+            <el-table-column prop="displayName" label="显示名称" min-width="100" align="center" show-overflow-tooltip>
+            </el-table-column>
+            <el-table-column prop="remark" label="说明" min-width="120" align="center" show-overflow-tooltip>
+            </el-table-column>
+            <el-table-column prop="type" label="属性类型" align="center" show-overflow-tooltip>
+            </el-table-column>
+            <el-table-column prop="startTrace" label="更改跟踪" :formatter="ChangeValue" align="center" show-overflow-tooltip>
+            </el-table-column>
+            <el-table-column prop="creater" label="创建者" min-width="80" align="center" show-overflow-tooltip>
+            </el-table-column>
+            <el-table-column prop="createTime" label="创建时间" min-width="120" align="center" show-overflow-tooltip>
+            </el-table-column>
+            <el-table-column prop="updater" label="修改者" min-width="120" align="center" show-overflow-tooltip>
+            </el-table-column>
+            <el-table-column prop="updateTime" label="修改时间" min-width="120" align="center" show-overflow-tooltip>
+            </el-table-column>
+            <el-table-column label="操作" align="center" width="100">
+                <template slot-scope="scope">
+                    <el-button size="small" type="primary" icon="el-icon-edit" circle class="button_button" plain @@click="handleEdit(scope.$index, scope.row)" title="编辑"></el-button>
+                    <el-button size="small" plain type="danger" circle title="删除" icon="el-icon-delete" @@click="handleDelete(scope.$index, scope.row)"></el-button>
+                </template>
+            </el-table-column>
+        </el-table>
+    </el-row>
+    @*------------------分页---------------*@
+    <el-row class="table_footer_btn">
+        <el-pagination background
+                       @@size-change="handleSizeChange"
+                       @@current-change="handleCurrentChange"
+                       :current-page="pagination.currentpage"
+                       :page-sizes="pagination.pagesizes"
+                       :page-size="pagination.pagesize"
+                       layout="total, sizes, prev, pager, next, jumper"
+                       :total="pagination.allNum"
+                       style="position:fixed; margin-top: 15px;">
+        </el-pagination>
+    </el-row>
+    @*------------------dialog弹框---------------*@
+    <el-dialog :title="dialogTitle" :visible.sync="dialogVisible" :close-on-click-modal="false" :close-on-press-escape="false" width="40%" @@closed="handleClose">
+        <el-form :model="AttributesRuleForm" ref="AttributesRuleForm" class="demo-ruleForm" :rules="AttributesFromrules" label-width="100px">
+            <el-form-item label="名字" required prop="Name">
+                <el-input size="mini" :disabled="disabled" v-model="AttributesRuleForm.Name" placeholder="名字" maxlength="50" show-word-limit></el-input>
+            </el-form-item>
+            <el-form-item label="显示名称" required prop="DisplayName">
+                <el-input size="mini" v-model="AttributesRuleForm.DisplayName" placeholder="显示名称" maxlength="50" show-word-limit></el-input>
+            </el-form-item>
+            <el-form-item label="说明" required prop="Remark">
+                <el-input size="mini" type="textarea" v-model="AttributesRuleForm.Remark" placeholder="说明" maxlength="200" show-word-limit></el-input>
+            </el-form-item>
+            <el-form-item label="属性类型:" required prop="Type">
+                <el-select size='mini' :disabled="disabled2" v-model="AttributesRuleForm.Type" placeholder="请选择属性类型" @@change="TypeHasChanged">
+                    <el-option v-for="(item,index) in AttributeTypes" :key="index" :label="item.label" :value="item.value">
+                    </el-option>
+                </el-select>
+            </el-form-item>
+            <el-form-item label="数据类型:" v-if="AttributesRuleForm.Type=='自由格式'" style="overflow:hidden;">
+                <el-select size='mini' :disabled="disabled2" v-model="AttributesRuleForm.DataType" placeholder="请选择数据类型" style="float:left;">
+                    <el-option v-for="(item,index) in AttributeDataType" :key="index" :label="item.label" :value="item.value">
+                    </el-option>
+                </el-select>
+                <div v-if="AttributesRuleForm.DataType=='文本'" style="float:left;margin-left:1%;height:60px;">
+                    <el-form-item required prop="TypeLength">
+                        <el-input size="mini" v-model="AttributesRuleForm.TypeLength" placeholder="长度最少50"></el-input>
+                    </el-form-item>
+                </div>
+            </el-form-item>
+            <div v-if="AttributesRuleForm.Type=='基于域'">
+                <el-form-item label="模型:">
+                    <el-select size='mini' :disabled="disabled2" v-model="AttributesRuleForm.LinkModelID" placeholder="请选择模型" @@change="ModelHasChanged2">
+                        <el-option v-for="(item,index) in ModelSelectOptions" :key="index" :label="item.name" :value="item.id">
+                        </el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="实体:">
+                    <el-select size='mini' :disabled="disabled2" id="linkEntity" v-model="AttributesRuleForm.LinkEntityID" placeholder="请选择实体">
+                        <el-option v-for="(item,index) in EntitySelectOptions2" :key="index" :label="item.name" :value="item.id">
+                        </el-option>
+                    </el-select>
+                </el-form-item>
+            </div>
+            <el-form-item>
+                <el-checkbox size="mini" label="启动更改跟踪" v-model="AttributesRuleForm.StartTrace"></el-checkbox>
+                <el-checkbox size="mini" label="是否展示" v-model="AttributesRuleForm.IsDisplay"></el-checkbox>
+            </el-form-item>
+            <div class="dialog_footer_btn">
+                <el-button size="small" type="primary" @@click="AddOrUpdate" v-html="'保存'"></el-button>
+                <el-button size="small" @@click="CancelAddOrUpdate" v-html="'取消'"></el-button>
+            </div>
+        </el-form>
+    </el-dialog>
+</div>
+@*</body>
+    </html>*@
+<environment include="Development">
+    <script src="~/js/dev/AttributesManagement.js?v=@DateTime.Now.Millisecond"></script>
+</environment>
+<environment exclude="Development">
+    <script src="~/js/dist/AttributesManagement.js?v=@DateTime.Now.Millisecond"></script>
+</environment>

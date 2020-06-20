@@ -1,0 +1,189 @@
+﻿
+@{
+    ViewData["Title"] = "实体公用视图";
+    Layout = null;
+}
+<script>
+        window.Entity ='@ViewBag.entity'==null ? null :'@ViewBag.entity';
+</script>
+<style>
+    .cell {
+        padding: 0px !important
+    }
+</style>
+<div id="CommonTool" v-cloak>
+    @*表格头部*@
+    <el-form :inline="true" class="demo-form-inline" style="margin: 8px 0px; display: flex; justify-content: space-between;">
+        <div>
+            <el-form-item label="模型:" style="margin-bottom: 0px;">
+                <el-select style="margin-left: 2%;" v-model="ModelID" placeholder="请选择模型" @@change="ModelHasChanged">
+                    <el-option v-for="(item,index) in ModelSelectOptions" :key="index" :label="item.name" :value="item.id">
+                    </el-option>
+                </el-select>
+            </el-form-item>
+            <el-form-item label="实体:" style="margin-bottom: 0px;">
+                <el-select style="margin-left: 2%;" v-model="EntityID" placeholder="请选择实体" @@change="EntityHasChanged">
+                    <el-option v-for="(item,index) in EntitySelectOptions" :key="index" :label="item.name" :value="item.id">
+                    </el-option>
+                </el-select>
+            </el-form-item>
+        </div>
+        <div>
+            <el-button size="small" circle type="primary" icon="el-icon-view" @@click="DataFilter" title="数据筛选"></el-button>
+            <el-button size="small" circle type="primary" icon="el-icon-upload" @@click="UploadExcel" title="批量导入"></el-button>
+            <el-button size="small" circle type="primary" icon="el-icon-download" @@click="DownExcelTemp" title="模板下载"></el-button>
+        </div>
+    </el-form>
+    @*上传文件按钮*@
+    <el-upload class="upload-demo"
+               action="/system/UploadExcel"
+               :on-success="UploadSuccess"
+               :before-upload="BeforeUpload"
+               :show-file-list="false"
+               :data="UploadExtra"
+               accept=".xlsx,.xls"
+               style="display:none"
+               id="UploadBtn">
+        <el-button size="small" type="primary">点击上传</el-button>
+    </el-upload>
+    @*实体数据列表*@
+    <el-row style="margin-top:5px;" v-show="ShowTable">
+        <el-table :header-cell-style="headerClass"
+                  :data="TableData"
+                  border
+                  style="width: 100%; overflow-y: auto;"
+                  :height="TableHeight"
+                  v-loading.fullscreen.lock="EntityColsTabLoading"
+                  element-loading-text="加载中......"
+                  element-loading-background="rgba(255, 255, 255, 0.75)">
+            @*<el-table-column type="index"
+                                 align="center"
+                                 width="50"
+                                 fixed="left">
+                </el-table-column>*@
+            <el-table-column :key="index" v-for="(item,index) in TableCols"
+                             :label="item.Label"
+                             align="center">
+                <template slot-scope="scope">
+                    <el-input :readonly="true" v-model="scope.row[item.field]"></el-input>
+                </template>
+            </el-table-column>
+            <el-table-column label="操作" align="center" width="100" :fixed="ColumnFixed">
+                <template slot-scope="scope">
+                    <el-button size="small" type="primary" icon="el-icon-edit" circle class="button_button" plain @@click="handleEdit(scope.$index,scope.row,$event)" title="编辑"></el-button>
+                    @*<el-button size="small" plain type="danger" circle title="删除" icon="el-icon-delete" @@click="handleDelete(scope.$index, scope.row)"></el-button>*@
+                </template>
+            </el-table-column>
+        </el-table>
+    </el-row>
+    @*分页控件*@
+    <el-row class="table_footer_btn" v-show="ShowTable">
+        <el-pagination background
+                       @@size-change="handleSizeChange"
+                       @@current-change="handleCurrentChange"
+                       :current-page="pagination.currentpage"
+                       :page-sizes="pagination.pagesizes"
+                       :page-size="pagination.pagesize"
+                       layout="total, sizes, prev, pager, next, jumper"
+                       :total="pagination.allNum"
+                       style="position:fixed; margin-top: 15px;">
+        </el-pagination>
+    </el-row>
+
+
+    @*抽屉*@
+    <el-drawer @@closed="DrawerhandleClose"
+               :visible.sync="DrawerDialog"
+               direction="rtl"
+               custom-class="demo-drawer"
+               ref="drawer"
+               size="50%">
+        <div class="demo-drawer__content">
+            <div style="padding-left:10px;padding-bottom:10px;">
+                <el-button size="small" icon="el-icon-circle-plus-outline" @@click="AddFilter" title="添加筛选"></el-button>
+                <el-button size="small" icon="el-icon-refresh-right" @@click="RefreshFilter" title="重置筛选"></el-button>
+                <el-button size="small" icon="el-icon-check" @@click="SearchFilter" title="提交"></el-button>
+            </div>
+            <el-table :data="FilterData"
+                      border
+                      size="small"
+                      style="width:100%">
+                <el-table-column v-for="(item,index) in DrawerCols"
+                                 :prop="item.field"
+                                 :key="index"
+                                 show-overflow-tooltip
+                                 align="center"
+                                 :label="item.label">
+                    <template slot-scope="scope">
+                        <el-select v-model="scope.row[scope.column.property]" v-if="scope.column.property=='AttrName'"
+                                   placeholder="请选择">
+                            <el-option v-for="(item,index) in AttrsSelectOptions"
+                                       :key="index"
+                                       :label="item"
+                                       :value="item">
+                            </el-option>
+                        </el-select>
+                        <el-select v-model="scope.row[scope.column.property]" v-if="scope.column.property=='Operator'"
+                                   placeholder="请选择">
+                            <el-option v-for="(item,index) in Operator"
+                                       :key="index"
+                                       :label="item.filter"
+                                       :value="item.value">
+                            </el-option>
+                        </el-select>
+                        <el-input v-model="scope.row[scope.column.property]" v-if="scope.column.property=='Content'" placeholder="请输入条件"></el-input>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center"
+                                 label="操作">
+                    <template slot-scope="scope">
+                        <el-button size="mini" icon="el-icon-delete" circle type="danger" @@click="DrawerhandleDelete(scope.row)" title="删除"></el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </div>
+    </el-drawer>
+
+
+    @*错误文件列表*@
+    @*<el-row style="margin-top:5px;" v-if="ShowLogsTable">
+            <el-table :header-cell-style="headerClass"
+                      :data="ErrorLogs"
+                      border
+                      style="width: 100%; overflow-y: auto;"
+                      height="280"
+                      element-loading-text="加载中......"
+                      element-loading-background="rgba(255, 255, 255, 0.75)">
+                <el-table-column :key="index" v-for="(item,index) in ErrorLogsCols"
+                                 :prop="item.field"
+                                 :label="item.title"
+                                 align="center">
+                </el-table-column>
+                <el-table-column label="操作" align="center" width="100">
+                    <template slot-scope="scope">
+                        <el-button size="small" type="primary" icon="el-icon-download" circle class="button_button" plain @@click="DownErrorFile(scope.row.file)" title="下载"></el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </el-row>
+        <el-row class="table_footer_btn" v-if="ShowLogsTable">
+            <el-pagination background
+                           @@size-change="handleSizeChange2"
+                           @@current-change="handleCurrentChange2"
+                           :current-page="pagination2.currentpage"
+                           :page-sizes="pagination2.pagesizes"
+                           :page-size="pagination2.pagesize"
+                           layout="total, sizes, prev, pager, next, jumper"
+                           :total="pagination2.allNum"
+                           style="margin-top: 15px;">
+            </el-pagination>
+        </el-row>*@
+</div>
+<environment include="Development">
+    <script src="~/js/dev/CommonToolView.js?v=@DateTime.Now.Millisecond"></script>
+</environment>
+<environment exclude="Development">
+    <script src="~/js/dist/CommonToolView.js?v=@DateTime.Now.Millisecond"></script>
+</environment>
+
+

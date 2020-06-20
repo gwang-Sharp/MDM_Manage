@@ -1,0 +1,110 @@
+﻿
+@{
+    ViewData["Title"] = "菜单管理";
+    Layout = null;
+}
+
+<div id="NavManage">
+    @*------------------顶部搜索框---------------*@
+    <el-row style="margin: 8px 0px;">
+        <div class="test-table-reload-btn">
+            <!--搜索ID：-->
+            <div class="layui-inline">
+                <el-input prefix-icon="el-icon-search" style="width:20%" placeholder="请输入条件" @*@@keyup.enter.native="GetRoleTableList"*@ v-model="search" clearable></el-input>
+                <el-button size="small" @@click="openMenuDialog('',0)" type="primary" circle title="新建" icon="el-icon-plus" style="margin-right:20px;float:right;margin-top:0.5%"></el-button>
+            </div>
+        </div>
+    </el-row>
+    @*------------------table表格---------------*@
+    <el-row>
+        <el-table :data="MenuTableData.filter(data => !search || data.navName.toLowerCase().includes(search.toLowerCase()))"
+                  :header-cell-style="headerClass"
+                  v-loading.fullscreen.lock="RoleTabLoading"
+                  element-loading-text="加载中......"
+                  element-loading-background="rgba(255, 255, 255, 0.75)"
+                  height="calc(100vh - 178px)"
+                  style="width: 100%;overflow-y: auto;"
+                  row-key="id"
+                  default-expand-all
+                  @*:tree-props="{children: 'children', hasChildren: 'hasChildren'}"*@
+                  ref="MenuTableData">
+            @*<el-table-column label="@Resources.Language.Number"
+                                 width="120">
+                    <template scope="scope">
+                        <span>{{scope.$index+(pagenum - 1) * pagesize + 1}} </span>
+                    </template>
+                </el-table-column>*@
+            <el-table-column prop="navName"
+                             align="left"
+                             label="菜单名称"
+                             show-overflow-tooltip>
+            </el-table-column>
+            <el-table-column prop="navDesc"
+                             align="center"
+                             show-overflow-tooltip
+                             size="small"
+                             label="描述">
+            </el-table-column>
+            <el-table-column prop="sequenceNo"
+                             align="center"
+                             show-overflow-tooltip
+                             size="small"
+                             label="排序号">
+            </el-table-column>
+            <el-table-column label="操作" width="200">
+                <template scope="scope">
+                    <el-button size="small" @@click="openMenuDialog(scope.row,1)" circle type="primary" plain title="添加" icon="el-icon-plus"></el-button>
+                    <el-button size="small" v-if="scope.row.confirmDelete == '0'" circle class="button_button" plain @@click="openMenuDialog(scope.row,2)" icon="el-icon-edit" type="primary" title="修改"></el-button>
+                    <el-button size="small" plain type="danger" v-if="scope.row.confirmDelete == '0'" circle title="删除" icon="el-icon-delete" @@click="DelMenu(scope.row)"></el-button>
+                </template>
+            </el-table-column>
+        </el-table>
+    </el-row>
+    @*------------------dialog弹框---------------*@
+    <el-dialog :title="dialogTitle"
+               :visible.sync="AddMenudialogVisible"
+               modal-append-to-body
+               :append-to-body="true"
+               width="40%"
+               :close-on-click-modal="false"
+               :close-on-press-escape="false"
+               @*:before-close="MenuFormhandleClose"*@
+               @@close="ClosedialogVisible">
+        <el-form :model="MenuForm" ref="MenuForm" label-position="left" :rules="rules" label-width="120px">
+            <div style="display:none;">
+                <el-form-item>
+                    <el-input v-model="MenuForm.addOrUpdate" v-show="false" maxlength="50" show-word-limit></el-input>
+                </el-form-item>
+            </div>
+            <el-form-item label="菜单名称" prop="Name">
+                <el-input v-model="MenuForm.Name" maxlength="50" show-word-limit></el-input>
+            </el-form-item>
+            <el-form-item label="菜单路径" prop="Address">
+                <el-input v-model="MenuForm.Address" maxlength="50" show-word-limit></el-input>
+            </el-form-item>
+            <el-form-item label="菜单描述" prop="Describ">
+                <el-input v-model="MenuForm.Describ" maxlength="50" show-word-limit></el-input>
+            </el-form-item>
+            <el-form-item label="菜单排序" prop="Sorting">
+                <el-input-number v-model="MenuForm.Sorting" :min="1" :max="999" size="small" @@change="vaidateNavFromNoIsInt"></el-input-number>
+                @*<el-input v-model="MenuForm.Sorting" maxlength="10" onkeyup="this.value=this.value.replace(/[^\d.]/g,'')" show-word-limit ></el-input>*@
+            </el-form-item>
+            <el-form-item label="是否允许删除" prop="ConfirmDelete" v-if="dialogTitle =='添加菜单' ">
+                <el-radio-group v-model="MenuForm.ConfirmDelete">
+                    <el-radio label="0">允许</el-radio>
+                    <el-radio label="1">拒绝</el-radio>
+                </el-radio-group>
+            </el-form-item>
+            <div class="dialog_footer_btn">
+                <el-button size="small" type="primary" @@click="AddMenu('MenuForm')">提交</el-button>
+                <el-button size="small" @@click="ClosedialogVisible('MenuForm')">取消</el-button>
+            </div>
+        </el-form>
+    </el-dialog>
+</div>
+<environment include="Development">
+    <script src="~/js/dev/NavManage.js?v=@DateTime.Now.Millisecond"></script>
+</environment>
+<environment exclude="Development">
+    <script src="~/js/dist/NavManage.js?v=@DateTime.Now.Millisecond"></script>
+</environment>

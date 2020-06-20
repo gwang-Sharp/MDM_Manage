@@ -1,0 +1,107 @@
+﻿
+@{
+    ViewData["Title"] = "角色管理";
+    Layout = null;
+}
+<div id="RoleManage">
+    <el-row style="margin: 8px 0px;">
+        <el-col :span="24">
+            <el-input prefix-icon="el-icon-search" style="width:20%;" v-model="RoleSearchName" placeholder="请输入角色名称" clearable></el-input>
+            <el-button size="small" @@click="OpenRoleDialog" type="primary" circle title="新建" icon="el-icon-plus" style="margin-right:20px;float:right;margin-top:0.3%"></el-button>
+        </el-col>
+    </el-row>
+
+    <el-row>
+        <el-table :data="RoleTableData"
+                  :height="tableHeight"
+                  :header-cell-style="headerClass"
+                  style="width: 100%"
+                  v-loading.fullscreen.lock="RoleTabLoading"
+                  element-loading-text="加载中......"
+                  element-loading-background="rgba(255, 255, 255, 0.75)"
+                  ref="RoleTableData">
+            <el-table-column label="序号"
+                             align="center"
+                             width="80">
+                <template scope="scope">
+                    <span>{{scope.$index+(pagenum - 1) * pagesize + 1}} </span>
+                </template>
+            </el-table-column>
+            <el-table-column prop="roleName"
+                             label="角色名称"
+                             align="center"
+                             show-overflow-tooltip>
+            </el-table-column>
+            <el-table-column prop="roleDesc"
+                             label="角色描述"
+                             align="center"
+                             show-overflow-tooltip>
+            </el-table-column>
+            <el-table-column prop="creater"
+                             show-overflow-tooltip
+                             width="140"
+                             align="center"
+                             label="创建者">
+            </el-table-column>
+            <el-table-column prop="createTime"
+                             show-overflow-tooltip
+                             width="160"
+                             align="center"
+                             label="创建时间">
+            </el-table-column>
+            <el-table-column label="操作" width="120">
+                <template scope="scope">
+                    <el-button size="small" class="button_button" plain @@click="OpenRoleEditDialog(scope.$index, scope.row)" circle type="primary" title="编辑" icon="el-icon-edit"></el-button>
+                    <el-button size="small" v-if="scope.row.ID!='1'" plain type="danger" title="删除" circle icon="el-icon-delete" @@click="DelRole(scope.row)"></el-button>
+                </template>
+            </el-table-column>
+        </el-table>
+        @*分页*@
+        <el-pagination background
+                       style="text-align: center;"
+                       @@size-change="handleSizeChange"
+                       @@current-change="handleCurrentChange"
+                       :current-page="pagenum"
+                       :page-size="pagesize" @*每页展示条*@
+                       :page-sizes="[pageMaxsize,20,50]"
+                       layout="total, sizes, prev, pager, next, jumper"
+                       :total="total">
+        </el-pagination>
+    </el-row>
+    @*添加用户和修改用户*@
+    <el-dialog :title="Title"
+               :visible.sync="AddRoledialogVisible"
+               width="30%"
+               @*modal-append-to-body*@
+               :append-to-body="true"
+               :close-on-click-modal="false"
+               :close-on-press-escape="false"
+               @*:before-close="UserFormhandleClose" *@
+               @@close="ClosedAddRoledialog">
+        <el-form label-position="left" :model="RoleForm" ref="RoleForm" :rules="rules" label-width="95px">
+            <el-form-item label="角色名称" prop="RoleName">
+                <el-input v-model="RoleForm.RoleName"
+                          maxlength="50"
+                          placeholder="请输入角色名称"
+                          show-word-limit></el-input>
+            </el-form-item>
+            <el-form-item label="角色描述" prop="RoleDesc">
+                <el-input type="textarea" v-model="RoleForm.RoleDesc"
+                          :autosize="{ minRows: 2, maxRows: 4}"
+                          maxlength="150"
+                          show-word-limit
+                          placeholder="请输入角色描述"></el-input>
+            </el-form-item>
+            <div class="dialog_footer_btn">
+                <el-button size="small" type="primary" @@click="SubmitRoleForm('RoleForm')">提交</el-button>
+                <el-button size="small" @@click="CloseRoledialogVisible('RoleForm')">取消</el-button>
+            </div>
+        </el-form>
+    </el-dialog>
+</div>
+<environment include="Development">
+    <script src="~/js/dev/RoleManage.js?v=@DateTime.Now.Millisecond"></script>
+</environment>
+<environment exclude="Development">
+    <script src="~/js/dist/RoleManage.js?v=@DateTime.Now.Millisecond"></script>
+</environment>

@@ -1,0 +1,172 @@
+﻿
+@{
+    ViewData["Title"] = "版本快照管理";
+    Layout = null;
+}
+
+<div id="Version">
+    <el-tabs v-model="activeName" @@tab-click="handleClick">
+        @*版本管理*@
+        <el-tab-pane label="快照管理" name="first">
+            @*表头刷选*@
+            <el-form :inline="true" class="demo-form-inline" style="margin: 8px 0px; display: flex; justify-content: space-between;">
+                <div>
+                    <el-form-item label="模型:" style="margin-bottom: 0px;">
+                        <el-select style="margin-left: 2%;" v-model="ModelID" placeholder="请选择模型" @@change="ModelHasChanged">
+                            <el-option v-for="(item,index) in ModelSelectOptions" :key="index" :label="item.name" :value="item.id">
+                            </el-option>
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item label="实体:" style="margin-bottom: 0px;">
+                        <el-select style="margin-left: 2%;" v-model="EntityID" placeholder="请选择实体" clearable @@change="EntityHasChanged">
+                            <el-option v-for="(item,index) in EntitySelectOptions" :key="index" :label="item.name" :value="item.id">
+                            </el-option>
+                        </el-select>
+                    </el-form-item>
+                </div>
+                <el-form-item style="margin-bottom: 0px;">
+                    <el-button size='small' circle style="margin-top: 10%" @@click="AddVersion" type="primary" title="新建" icon="el-icon-plus"></el-button>
+                </el-form-item>
+            </el-form>
+            @*版本数据列表*@
+            <el-row style="margin-top:5px;">
+                <el-table :header-cell-style="headerClass"
+                          :data="TableData"
+                          border
+                          style="width: 100%; overflow-y: auto;"
+                          :height="TableHeight"
+                          v-loading.fullscreen.lock="ColsTabLoading"
+                          element-loading-text="加载中......"
+                          element-loading-background="rgba(255, 255, 255, 0.75)">
+                    <el-table-column :key="index" v-for="(item,index) in VersionTableCols"
+                                     :prop="item.field"
+                                     :label="item.title"
+                                     align="center">
+                    </el-table-column>
+                    <el-table-column label="操作" align="center" width="100">
+                        <template slot-scope="scope">
+                            <el-button size="small" plain type="danger" circle title="删除" icon="el-icon-delete" @@click="handleDelete(scope.row)"></el-button>
+                        </template>
+                    </el-table-column>
+                </el-table>
+            </el-row>
+            @*分页控件*@
+            <el-row class="table_footer_btn">
+                <el-pagination background
+                               @@size-change="handleSizeChange"
+                               @@current-change="handleCurrentChange"
+                               :current-page="pagination.currentpage"
+                               :page-sizes="pagination.pagesizes"
+                               :page-size="pagination.pagesize"
+                               layout="total, sizes, prev, pager, next, jumper"
+                               :total="pagination.allNum"
+                               style="position:fixed;">
+                </el-pagination>
+            </el-row>
+        </el-tab-pane>
+        @*拉链管理*@
+        <el-tab-pane label="拉链管理" name="second">
+            @*表头刷选*@
+            <el-form :inline="true" class="demo-form-inline" style="margin: 8px 0px; display: flex; justify-content: space-between;">
+                <div>
+                    <el-form-item label="模型:" style="margin-bottom: 0px;">
+                        <el-select style="margin-left: 2%;" v-model="ModelID2" placeholder="请选择模型" @@change="ModelHasChanged2">
+                            <el-option v-for="(item,index) in ModelSelectOptions2" :key="index" :label="item.name" :value="item.id">
+                            </el-option>
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item label="实体:" style="margin-bottom: 0px;">
+                        <el-select style="margin-left: 2%;" v-model="EntityID2" placeholder="请选择实体" clearable @@change="EntityHasChanged2">
+                            <el-option v-for="(item,index) in EntitySelectOptions2" :key="index" :label="item.name" :value="item.id">
+                            </el-option>
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item label="属性:" style="margin-bottom: 0px;">
+                        <el-select style="margin-left: 2%;" v-model="AttrID" placeholder="请选择属性" clearable @@change="AttrHasChanged">
+                            <el-option v-for="(item,index) in AttrsSelectOptions" :key="index" :label="item.name" :value="item.id">
+                            </el-option>
+                        </el-select>
+                    </el-form-item>
+                </div>
+            </el-form>
+            @*拉链数据列表*@
+            <el-row style="margin-top:5px;">
+                <el-table :header-cell-style="headerClass"
+                          :data="TableData2"
+                          border
+                          style="width: 100%; overflow-y: auto;"
+                          :height="TableHeight"
+                          v-loading="ColsTabLoading2"
+                          element-loading-text="加载中......"
+                          element-loading-background="rgba(255, 255, 255, 0.75)">
+                    <el-table-column :key="index" v-for="(item,index) in TableCols"
+                                     :prop="item.field"
+                                     :label="item.title"
+                                     align="center">
+                    </el-table-column>
+                </el-table>
+            </el-row>
+            @*分页控件*@
+            <el-row class="table_footer_btn">
+                <el-pagination background
+                               @@size-change="handleSizeChange2"
+                               @@current-change="handleCurrentChange2"
+                               :current-page="pagination2.currentpage"
+                               :page-sizes="pagination2.pagesizes"
+                               :page-size="pagination2.pagesize"
+                               layout="total, sizes, prev, pager, next, jumper"
+                               :total="pagination2.allNum"
+                               style="position:fixed;">
+                </el-pagination>
+            </el-row>
+        </el-tab-pane>
+    </el-tabs>
+
+    @*弹出框*@
+    <el-dialog :title="dialogTitle" :close-on-click-modal="false" :close-on-press-escape="false" :visible.sync="dialogVisible" width="40%" @@closed="handleClose">
+        <el-form :model="VsesionForm" ref="VsesionForm" class="demo-ruleForm" :rules="VersionFromrules" label-width="100px">
+            <el-form-item label="名称" required prop="Name">
+                <el-input size="mini" v-model="VsesionForm.Name" placeholder="名字" maxlength="50" show-word-limit></el-input>
+            </el-form-item>
+            <el-form-item label="说明" required prop="Remark">
+                <el-input size="mini" v-model="VsesionForm.Remark" placeholder="说明" maxlength="200" show-word-limit></el-input>
+            </el-form-item>
+            <el-form-item label="涉及表名" v-if="tags.length>0">
+                <el-tag v-for="tag in tags"
+                        :key="tag.name"
+                        type="info">
+                    {{tag.name}}
+                </el-tag>
+            </el-form-item>
+            <div class="dialog_footer_btn">
+                <el-button size="small" id="submit" type="primary" @@click="addOrUpdate" v-html="'确定'"></el-button>
+                <el-button size="small" @@click="CancelAddOrUpdate" v-html="'取消'"></el-button>
+            </div>
+        </el-form>
+    </el-dialog>
+    @*完成进度*@
+    <el-dialog :visible.sync="dialogVisible2" width="20%" @@closed="handleClose2" :close-on-click-modal="false" :close-on-press-escape="false" :show-close="ShowClose">
+        <div class="block">
+            <el-timeline>
+                <el-timeline-item v-for="(activity, index) in activities"
+                                  :key="index"
+                                  :icon="activity.icon"
+                                  :type="activity.type"
+                                  :color="activity.color"
+                                  :size="activity.size"
+                                  :timestamp="activity.timestamp">
+                    {{activity.content}}
+                </el-timeline-item>
+            </el-timeline>
+        </div>
+    </el-dialog>
+
+</div>
+<script src="~/lib/signalr/signalr.js?v=@DateTime.Now.Millisecond"></script>
+<environment include="Development">
+    <script src="~/js/dev/VersionManagement.js?v=@DateTime.Now.Millisecond"></script>
+</environment>
+<environment exclude="Development">
+    <script src="~/js/dist/VersionManagement.js?v=@DateTime.Now.Millisecond"></script>
+</environment>
+

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Fisk.MDM.DataAccess\Fisk.MDM.DataAccess.csproj" />
+    <ProjectReference Include="..\Fisk.MDMViewModel\Fisk.MDM.ViewModel.csproj" />
+  </ItemGroup>
+
+</Project>

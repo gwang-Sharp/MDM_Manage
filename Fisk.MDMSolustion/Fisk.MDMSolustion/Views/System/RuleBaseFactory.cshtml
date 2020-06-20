@@ -1,0 +1,448 @@
+﻿
+@{
+    ViewData["Title"] = "业务规则管理";
+    Layout = null;
+}
+
+<div id="RuleBaseManage">
+
+    <template>
+        <el-tabs v-model="activeName" @@tab-click="TabHandleClick">
+            <el-tab-pane label="字段验证" name="first">
+
+                <el-row style="margin: 8px 0px;">
+                    <el-col :span="24">
+
+                        <el-select size="small" style="margin-left: 2%;width:20%" v-model="ModelName" placeholder="请选择模型" @@change="ModelHasChanged">
+                            <el-option v-for="item in ModelSelectOptions" :key="item.id" :label="item.name" :value="item.id">
+                            </el-option>
+                        </el-select>
+
+                        <el-select size="small" style="margin-left: 2%;width:20%" v-model="EntityName" placeholder="请选择实体" @@change="EntityHasChanged">
+                            <el-option v-for="item in EntitySelectOptions" :key="item.id" :label="item.name" :value="item.id">
+                            </el-option>
+                        </el-select>
+                        <el-button size="small" type="primary" style="margin-right:20px;float:right;margin-top:0.3%" @@click="ReleaseProc">发布</el-button>
+                        <el-button size="small" @@click="OpenRuleBaseDialog" type="primary" circle title="新建" icon="el-icon-plus" style="margin-right:20px;float:right;margin-top:0.3%"></el-button>
+
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-table :data="RuleBaseTableData"
+                              :height="tableHeight"
+                              :header-cell-style="headerClass"
+                              style="width: 100%"
+                              v-loading.fullscreen.lock="RuleBaseTabLoading"
+                              element-loading-text="加载中......"
+                              element-loading-background="rgba(255, 255, 255, 0.75)"
+                              ref="RuleBaseTableData">
+                        <el-table-column label="序号"
+                                         align="center"
+                                         width="80">
+                            <template scope="scope">
+                                <span>{{scope.$index+(pagenum - 1) * pagesize + 1}} </span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="ruleName"
+                                         label="规则名称"
+                                         align="center"
+                                         show-overflow-tooltip>
+                        </el-table-column>
+                        <el-table-column prop="description"
+                                         label="规则描述"
+                                         align="center"
+                                         show-overflow-tooltip>
+                        </el-table-column>
+                        <el-table-column prop="state"
+                                         label="状态"
+                                         align="center"
+                                         show-overflow-tooltip>
+                        </el-table-column>
+                        <el-table-column prop="creater"
+                                         show-overflow-tooltip
+                                         width="180"
+                                         align="center"
+                                         label="创建者">
+                        </el-table-column>
+                        <el-table-column prop="createTime"
+                                         show-overflow-tooltip
+                                         width="200"
+                                         align="center"
+                                         label="创建时间">
+                        </el-table-column>
+                        <el-table-column prop="updater"
+                                         show-overflow-tooltip
+                                         width="180"
+                                         align="center"
+                                         label="更新者">
+                        </el-table-column>
+                        <el-table-column prop="updateTime"
+                                         show-overflow-tooltip
+                                         width="200"
+                                         align="center"
+                                         label="更新时间">
+                        </el-table-column>
+                        <el-table-column label="操作" width="160">
+                            <template scope="scope">
+                                <el-button size="small" class="button_button" plain @@click="OpenRuleBaseEditDialog(scope.$index, scope.row)" circle type="primary" title="编辑" icon="el-icon-edit"></el-button>
+                                <el-button size="small" plain type="danger" title="删除" circle icon="el-icon-delete" @@click="DelRuleBase(scope.row)"></el-button>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                    @*分页*@
+                    <el-pagination background
+                                   style="text-align: center;"
+                                   @@size-change="handleSizeChange"
+                                   @@current-change="handleCurrentChange"
+                                   :current-page="pagenum"
+                                   :page-size="pagesize"
+                                   :page-sizes="[pageMaxsize,20,50]"
+                                   layout="total, sizes, prev, pager, next, jumper"
+                                   :total="total">
+                    </el-pagination>
+                </el-row>
+
+            </el-tab-pane>
+            <el-tab-pane label="数据验证" name="second">
+                <el-row style="margin: 8px 0px;">
+                    <el-col :span="24">
+
+                        <el-select size="small" style="margin-left: 2%;width:20%" v-model="DataModelName" placeholder="请选择模型" @@change="ModelHasChanged">
+                            <el-option v-for="item in DataModelSelectOptions" :key="item.id" :label="item.name" :value="item.id">
+                            </el-option>
+                        </el-select>
+
+                        <el-select size="small" style="margin-left: 2%;width:20%" v-model="DataEntityName" placeholder="请选择实体" @@change="EntityHasChanged">
+                            <el-option v-for="item in DataEntitySelectOptions" :key="item.id" :label="item.name" :value="item.id">
+                            </el-option>
+                        </el-select>
+                        <el-button size="small" @@click="OpenDataValidationTableDialog" type="primary" circle title="新建" icon="el-icon-plus" style="margin-right:20px;float:right;margin-top:0.3%"></el-button>
+
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-table :data="DataValidationTableData"
+                              :height="tableHeight"
+                              :header-cell-style="headerClass"
+                              style="width: 100%"
+                              v-loading.fullscreen.lock="DataValidationTabLoading"
+                              element-loading-text="加载中......"
+                              element-loading-background="rgba(255, 255, 255, 0.75)"
+                              ref="DataValidationTableData">
+                        <el-table-column label="序号"
+                                         align="center"
+                                         width="80">
+                            <template scope="scope">
+                                <span>{{scope.$index+(pagenum - 1) * pagesize + 1}} </span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="name"
+                                         label="名称"
+                                         width="100"
+                                         align="center"
+                                         show-overflow-tooltip>
+                        </el-table-column>
+                        <el-table-column prop="description"
+                                         label="描述"
+                                         align="center"
+                                         width="100"
+                                         show-overflow-tooltip>
+                        </el-table-column>
+                        <el-table-column prop="functionName"
+                                         label="存储过程名称"
+                                         align="center"
+                                         show-overflow-tooltip>
+                        </el-table-column>
+                        <
+                        <el-table-column prop="creater"
+                                         show-overflow-tooltip
+                                         width="180"
+                                         align="center"
+                                         label="创建者">
+                        </el-table-column>
+
+                        <el-table-column prop="createTime"
+                                         show-overflow-tooltip
+                                         width="200"
+                                         align="center"
+                                         label="创建时间">
+                        </el-table-column>
+                        <el-table-column label="操作" width="300">
+                            <template scope="scope">
+                                <el-button size="small" class="button_button" plain @@click="OpenDataValidationEditDialog( scope.row)" circle type="primary" title="编辑" icon="el-icon-edit"></el-button>
+                                <el-button size="small" plain type="danger" title="删除" circle icon="el-icon-delete" @@click="DelDataValidation(scope.row)"></el-button>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                    @*分页*@
+                    <el-pagination background
+                                   style="text-align: center;"
+                                   @@size-change="handleSizeChange"
+                                   @@current-change="handleCurrentChange"
+                                   :current-page="pagenum"
+                                   :page-size="pagesize"
+                                   :page-sizes="[pageMaxsize,20,50]"
+                                   layout="total, sizes, prev, pager, next, jumper"
+                                   :total="total">
+                    </el-pagination>
+                </el-row>
+            </el-tab-pane>
+            <el-tab-pane label="数据维护" name="Three">
+                <el-row style="margin: 8px 0px;">
+                    <el-col :span="24">
+
+                        <el-select size="small" style="margin-left: 2%;width:20%" v-model="FieldModelName" placeholder="请选择模型" @@change="ModelHasChanged">
+                            <el-option v-for="item in FieldModelSelectOptions" :key="item.id" :label="item.name" :value="item.id">
+                            </el-option>
+                        </el-select>
+
+                        <el-select size="small" style="margin-left: 2%;width:20%" v-model="FieldEntityID" placeholder="请选择实体" @@change="EntityHasChanged">
+                            <el-option v-for="item in FieldEntitySelectOptions" :key="item.id" :label="item.name" :value="item.id">
+                            </el-option>
+                        </el-select>
+                        <el-button size="small" @@click="OpenDataTableDialog" type="primary" circle title="新建" icon="el-icon-plus" style="margin-right:20px;float:right;margin-top:0.3%"></el-button>
+
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-table :data="EntityDataTableData"
+                              :height="tableHeight"
+                              :header-cell-style="headerClass"
+                              style="width: 100%"
+                              v-loading.fullscreen.lock="EntityDataTabLoading"
+                              element-loading-text="加载中......"
+                              element-loading-background="rgba(255, 255, 255, 0.75)">
+                        <el-table-column label="序号"
+                                         align="center"
+                                         width="80">
+                            <template scope="scope">
+                                <span>{{scope.$index+(pagenum - 1) * pagesize + 1}} </span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column prop="ruleName"
+                                         label="名称"
+                                         align="center"
+                                         show-overflow-tooltip>
+                        </el-table-column>
+                        <el-table-column prop="ruleRemark"
+                                         label="说明"
+                                         align="center"
+                                         show-overflow-tooltip>
+                        </el-table-column>
+                        <el-table-column prop="ruleType"
+                                         label="类型"
+                                         align="center"
+                                         show-overflow-tooltip
+                                         :formatter="TypeTransfer">
+                        </el-table-column>
+                        <el-table-column prop="apiaddress"
+                                         label="API地址"
+                                         align="center"
+                                         show-overflow-tooltip>
+                        </el-table-column>
+                        <el-table-column prop="createUser"
+                                         show-overflow-tooltip
+                                         align="center"
+                                         label="创建者">
+                        </el-table-column>
+
+                        <el-table-column prop="createTime"
+                                         show-overflow-tooltip
+                                         align="center"
+                                         label="创建时间">
+                        </el-table-column>
+                        <el-table-column prop="updateUser"
+                                         show-overflow-tooltip
+                                         align="center"
+                                         label="更新者">
+                        </el-table-column>
+
+                        <el-table-column prop="updateTime"
+                                         show-overflow-tooltip
+                                         align="center"
+                                         label="更新时间">
+                        </el-table-column>
+                        <el-table-column label="操作">
+                            <template scope="scope">
+                                <el-button size="small" class="button_button" plain @@click="EntityDataRuleEditDialog( scope.row)" circle type="primary" title="编辑" icon="el-icon-edit"></el-button>
+                                <el-button size="small" plain type="danger" title="删除" circle icon="el-icon-delete" @@click="DelDtValidation(scope.row)"></el-button>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                </el-row>
+                @*分页*@
+                <el-row class="table_footer_btn">
+                    <el-pagination background
+                                   @@size-change="handleSizeChange3"
+                                   @@current-change="handleCurrentChange3"
+                                   :current-page="pagination.currentpage"
+                                   :page-sizes="pagination.pagesizes"
+                                   :page-size="pagination.pagesize"
+                                   layout="total, sizes, prev, pager, next, jumper"
+                                   :total="pagination.allNum"
+                                   style="position:fixed;">
+                    </el-pagination>
+            </el-tab-pane>
+
+        </el-tabs>
+    </template>
+
+
+
+    @*添加用户和修改用户*@
+    <el-dialog :title="Title"
+               :visible.sync="AddRuleBasedialogVisible"
+               width="30%"
+               :append-to-body="true"
+               :close-on-click-modal="false"
+               :close-on-press-escape="false"
+               @@close="ClosedAddRuleBasedialog">
+        <el-form label-position="left" :model="RuleBaseForm" ref="RuleBaseForm" :rules="RuleBaseRules" label-width="95px">
+            <el-form-item label="名称" prop="RuleName">
+                <el-input v-model="RuleBaseForm.RuleName"
+                          maxlength="50"
+                          placeholder="请输入规则名称"
+                          show-word-limit></el-input>
+            </el-form-item>
+            @*<el-form-item label="规则描述" prop="Description">
+                    <el-input v-model="RuleBaseForm.Description"
+                              maxlength="150"
+                              show-word-limit
+                              placeholder="请输入规则描述"></el-input>
+                </el-form-item>*@
+            <el-form-item label="规则描述" prop="Description">
+                <el-input v-model="RuleBaseForm.Description"
+                          maxlength="150"
+                          placeholder="请输入规则名称"
+                          show-word-limit></el-input>
+            </el-form-item>
+            <el-form-item label="属性" prop="AttributeName">
+                <el-select maxlength="50" show-word-limit @@change="AttributeNameDialogChange" v-model="RuleBaseForm.AttributeName" placeholder="请选择模型">
+                    <el-option v-for="item in AttributeSelectOptions" :key="item.id" :label="item.name" :value="item.id">
+                    </el-option>
+                </el-select>
+            </el-form-item>
+            <el-form-item label="必填" prop="Required" style="margin-left:10px">
+                <el-switch v-model="RuleBaseForm.Required"></el-switch>
+            </el-form-item>
+            <el-form-item label="验证规则" prop="Type">
+                <el-radio-group @@change="TypeChange" v-model="RuleBaseForm.Type">
+                    <el-radio label="手机号"></el-radio>
+                    <el-radio label="邮箱"></el-radio>
+                    <el-radio label="自定义验证规则"></el-radio>
+                </el-radio-group>
+            </el-form-item>
+            <el-form-item style="margin-left:10px" prop="Expression" v-if="CustomTypeIsShow" label="自定义规则">
+                <el-input v-model="RuleBaseForm.Expression"
+                          maxlength="150"
+                          placeholder="请输入自定义验证规则"
+                          show-word-limit></el-input>
+            </el-form-item>
+            <div class="dialog_footer_btn">
+                <el-button size="small" type="primary" @@click="SubmitRuleBaseForm('RuleBaseForm')">提交</el-button>
+                <el-button size="small" @@click="CloseRuleBasedialogVisible('RuleBaseForm')">取消</el-button>
+            </div>
+        </el-form>
+    </el-dialog>
+    @*---------------------------- 数据维护板开始-------------*@
+
+    <el-dialog :title="DatadialogTitle2" :visible.sync="DatadialogVisible2" :close-on-click-modal="false" :close-on-press-escape="false" width="30%" @@closed="DatahandleClose2">
+        <el-form :model="DataFormModel" ref="DataFormModel" label-position="left" class="demo-ruleForm" label-width="120px" :rules="DataValidationFormRules">
+            <el-form-item label="名称" required prop="RuleName">
+                <el-input size="mini" v-model="DataFormModel.RuleName" placeholder="名称" maxlength="50" show-word-limit></el-input>
+            </el-form-item>
+            <el-form-item label="说明" required prop="RuleRemark">
+                <el-input size="mini" v-model="DataFormModel.RuleRemark" placeholder="说明" maxlength="50" show-word-limit></el-input>
+            </el-form-item>
+            <el-form-item label="类型" required prop="RuleType">
+                <el-select size="small" v-model="DataFormModel.RuleType" placeholder="请选择类型" @@change="TypeHasChanged" style="width:100%">
+                    <el-option v-for="item in DataModelChangeSelectOptions" :key="item.id" :label="item.name" :value="item.value">
+                    </el-option>
+                </el-select>
+            </el-form-item>
+            <el-form-item label="属性" required prop="AttributeID" v-if="DataFormModel.RuleType=='update'">
+                <el-select size="small" filterable multiple v-model="DataFormModel.AttributeID" placeholder="请选择属性" style="width:100%">
+                    <el-option v-for="(item,index)  in AttrsSelectOptions" :key="index" :label="item.name" :value="item.id">
+                    </el-option>
+                </el-select>
+            </el-form-item>
+            <el-form-item label="API地址" required prop="Apiaddress">
+                <el-input size="mini"
+                          type="textarea"
+                          :rows="2"
+                          placeholder="请输入API地址"
+                          v-model="DataFormModel.Apiaddress"
+                          maxlength="100"
+                          show-word-limit>
+                </el-input>
+            </el-form-item>
+            <el-form-item label="BpmName" required prop="Apiaddress">
+                <el-input size="mini" v-model="DataFormModel.BpmName" placeholder="请输入内容" maxlength="50" show-word-limit></el-input>
+            </el-form-item>
+            <el-form-item label="ApplyTtile" required prop="Apiaddress">
+                <el-input size="mini" v-model="DataFormModel.ApplyTitle" placeholder="请输入内容" maxlength="50" show-word-limit></el-input>
+            </el-form-item>
+            <div class="dialog_footer_btn">
+                <el-button size="small" type="primary" @@click="SubmitDataFrom" v-html="'保存'"></el-button>
+                <el-button size="small" @@click="DataCancelAddOrUpdate2" v-html="'取消'"></el-button>
+            </div>
+        </el-form>
+    </el-dialog>
+
+    @*---------------------------- 数据维护板开始-------------*@
+
+
+
+
+    @*---------------------------- 字段验证面板开始-------------*@
+
+    <el-dialog :title="FieldialogTitle" :visible.sync="FieldialogVisible" :close-on-click-modal="false" :close-on-press-escape="false" width="30%" @@closed="FieldhandleClose">
+        <el-form :model="FieldValidationForm" label-position="left" ref="FieldValidationForm" class="demo-ruleForm" label-width="120px" :rules="FieldValidationFormRules">
+            <el-form-item label="名称" required prop="Name">
+                <el-input size="mini" v-model="FieldValidationForm.Name" placeholder="名称" maxlength="50" show-word-limit></el-input>
+            </el-form-item>
+            <el-form-item label="说明" required prop="Description">
+                <el-input size="mini" v-model="FieldValidationForm.Description" placeholder="说明" maxlength="50" show-word-limit></el-input>
+            </el-form-item>
+            <div class="dialog_footer_btn">
+                <el-button size="small" type="primary" @@click="SubmitFieldValidationFrom" v-html="'保存'"></el-button>
+                <el-button size="small" @@click="FieldCancelAddOrUpdate" v-html="'取消'"></el-button>
+            </div>
+        </el-form>
+    </el-dialog>
+
+    @*---------------------------- 字段验证面板结束-------------*@
+
+
+
+
+    @*---------------------------- 数据验证面板开始-------------*@
+
+
+    <el-dialog :title="DatadialogTitle" :visible.sync="DatadialogVisible" :close-on-click-modal="false" :close-on-press-escape="false" width="30%" @@closed="DatahandleClose">
+        <el-form :model="DataValidationForm" label-position="left" ref="DataValidationForm" class="demo-ruleForm" label-width="120px" :rules="DataValidationFormRules">
+            <el-form-item label="名称" required prop="Name">
+                <el-input size="mini" v-model="DataValidationForm.Name" placeholder="名称" maxlength="50" show-word-limit></el-input>
+            </el-form-item>
+            <el-form-item label="说明" required prop="Description">
+                <el-input size="mini" v-model="DataValidationForm.Description" placeholder="说明" maxlength="50" show-word-limit></el-input>
+            </el-form-item>
+            <el-form-item label="存储过程名称" required prop="FunctionName">
+                <el-input size="mini" v-model="DataValidationForm.FunctionName" placeholder="存储过程名称" maxlength="50" show-word-limit></el-input>
+            </el-form-item>
+            <div class="dialog_footer_btn">
+                <el-button size="small" type="primary" @@click="SubmitDataValidationFrom" v-html="'保存'"></el-button>
+                <el-button size="small" @@click="DataCancelAddOrUpdate" v-html="'取消'"></el-button>
+            </div>
+        </el-form>
+    </el-dialog>
+
+    @*---------------------------- 数据验证面板结束-------------*@
+
+</div>
+<environment include="Development">
+    <script src="~/js/dev/RuleBaseFactory.js?v=@DateTime.Now.Millisecond"></script>
+</environment>
+<environment exclude="Development">
+    <script src="~/js/dist/RuleBaseFactory.js?v=@DateTime.Now.Millisecond"></script>
+</environment>

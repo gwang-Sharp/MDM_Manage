@@ -1,0 +1,84 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="pragma" content="no-cache" />
+    <meta HTTP-EQUIV="Cache-Control" CONTENT="no-cache, must-revalidate">
+    @*<link rel="icon" type="image/x-icon" href="/favicon.ico" />*@
+    <title>Fisk_MDM</title>
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+
+        #layout {
+            height: 100%;
+        }
+
+        .el-aside ul {
+            border-right-width: 0 !important;
+        }
+    </style>
+    @*------------- css引用 ------------*@
+    <link href="~/lib/element-ui/theme-chalk/index.css" rel="stylesheet" />
+    <link href="~/css/Layout/Layout.css" rel="stylesheet" />
+    @*-------------- js引用 -------------*@
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/Vue/vue.js"></script>
+    <script src="~/lib/element-ui/index.js"></script>
+</head>
+<body>
+    <div id="layout">
+        <el-container style="height:100%">
+            @*---------- 左侧菜单menu -----------*@
+            <el-aside style="height:100%;width:auto;">
+                <el-menu default-active="MenuAutoSetting" class="el-menu-vertical-demo" :collapse="isCollapse" :unique-opened="true" :background-color="ThemeSetting" active-text-color="#409EFF">
+                    <template v-for="(item,index) in NavTreeList">
+                        <el-submenu v-if="item.children.length>0" :index="item.navCode" :key="index" v-cloak>
+                            <template slot="title">
+                                <i :class="'iconfont '+item.IconStr"></i>
+                                <span v-cloak slot="title">{{item.navName}}</span>
+                            </template>
+                            <template v-for="(T_Item,T_index) in item.children" v-cloak>
+                                <el-menu-item :index="T_Item.navCode" v-on:click="TabMenu(T_Item.navURL,T_Item.navCode)">{{T_Item.navName}}</el-menu-item>
+                            </template>
+                        </el-submenu>
+                        <el-menu-item v-else :index="item.navCode" v-on:click="TabMenu(item.navURL,item.navCode)" :key="index">
+                            <i :class="'iconfont '+item.IconStr" v-on:click="TabMenu(item.navURL,item.navCode)"></i>
+                            <span slot="title" v-on:click="TabMenu(item.navURL,item.navCode)">{{item.navName}}</span>
+                        </el-menu-item>
+                    </template>
+                </el-menu>
+            </el-aside>
+            @*------------- 右侧内容 -----------*@
+            <el-container>
+                <el-header>
+                    <el-card shadow="always">
+                        <div @@click="Collapse" style="padding:0px 15px;cursor:pointer;height:40px;line-height:40px;float:left;">
+                            <i class="el-icon-s-fold"></i>
+                        </div>
+                        <p style="color:red">用户名: @User.Claims.First().Value</p>
+                    </el-card>
+                </el-header>
+                <el-main>
+                    <!-- 主体内容 -->
+                    <div class="lay-body" style="background-color:white;height:100%" id="MainBody">
+                        @RenderBody()
+                    </div>
+                </el-main>
+            </el-container>
+        </el-container>
+    </div>
+
+    @*---------- 结尾需要的js ----------*@
+    <environment include="Development">
+        <script src="~/js/dev/Layout.js?v=@DateTime.Now.Millisecond"></script>
+    </environment>
+    <environment exclude="Development">
+        <script src="~/js/dist/Layout.js?v=@DateTime.Now.Millisecond"></script>
+    </environment>
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

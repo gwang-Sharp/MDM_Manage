@@ -1,0 +1,8 @@
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMUtility\bin\Release\netcoreapp3.1\Fisk.MDM.Utility.deps.json
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMUtility\bin\Release\netcoreapp3.1\Fisk.MDM.Utility.dll
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMUtility\bin\Release\netcoreapp3.1\Fisk.MDM.Utility.pdb
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMUtility\obj\Release\netcoreapp3.1\Fisk.MDM.Utility.csproj.CoreCompileInputs.cache
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMUtility\obj\Release\netcoreapp3.1\Fisk.MDM.Utility.AssemblyInfoInputs.cache
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMUtility\obj\Release\netcoreapp3.1\Fisk.MDM.Utility.AssemblyInfo.cs
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMUtility\obj\Release\netcoreapp3.1\Fisk.MDM.Utility.dll
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMUtility\obj\Release\netcoreapp3.1\Fisk.MDM.Utility.pdb

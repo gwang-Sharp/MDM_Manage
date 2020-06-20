@@ -1,0 +1,75 @@
+﻿
+@{
+    ViewData["Title"] = "Model";
+    Layout = null;
+}
+<div id="Model">
+    @*------------------顶部搜索框---------------*@
+    <el-row style="margin: 8px 0px;">
+        <el-col :span="24">
+            <el-input prefix-icon="el-icon-search" style="width:20%;" v-model="searchName" placeholder="请输入名称或者备注" clearable></el-input>
+            <el-button size='small' circle style="margin-right: 20px; float: right; margin-top: 0.5%" @@click="AddModel" type="primary" title="新建" icon="el-icon-plus"></el-button>
+        </el-col>
+    </el-row>
+    @*------------------table表格---------------*@
+    <el-row>
+        <el-table :data="ModeltableData"
+                  :header-cell-style="headerClass"
+                  v-loading.fullscreen.lock="TableLoading"
+                  element-loading-text="加载中......"
+                  element-loading-background="rgba(255, 255, 255, 0.75)"
+                  height="calc(100vh - 178px)"
+                  style="width: 100%; overflow-y: auto;">
+            <el-table-column v-for="item in SQLCommonFiled"
+                             :prop="item.Value"
+                             show-overflow-tooltip
+                             align="center"
+                             :label="item.Label">
+            </el-table-column>
+            <el-table-column label="操作" align="center">
+                <template slot-scope="scope">
+                    <el-button size="small" type="primary" circle plain title="修改" @@click="EditModel(scope.row)" icon="el-icon-edit"></el-button>
+                    <el-button size="small" type="danger" circle plain title="删除" @@click="DeleteModel(scope.row)" icon="el-icon-delete"></el-button>
+                </template>
+            </el-table-column>
+        </el-table>
+    </el-row>
+    @*------------------分页---------------*@
+    <el-row class="table_footer_btn">
+        <el-pagination background
+                       style="position:fixed; margin-top: 15px;"
+                       :page-size="Pagination.limit"
+                       v-on:current-change="CurrentChange"
+                       :current-page="Pagination.page"
+                       :page-sizes="Pagination.pageSizes"
+                       layout="total, sizes, prev, pager, next, jumper"
+                       :total="Pagination.total">
+        </el-pagination>
+    </el-row>
+    @*------------------dialog弹框---------------*@
+    <el-dialog :title="dialogTitle" :visible.sync="dialogVisible" :close-on-click-modal="false" :close-on-press-escape="false" width="40%" @@close="DialogClose">
+        <el-form label-position="right" :model="ModelFormInfo" :rules="ModelFromrules" ref="ModelForm" label-width="110px" class="demo-ruleForm">
+            <el-form-item label="模型名称" prop="name">
+                <el-input v-model="ModelFormInfo.name" maxlength="50" show-word-limit></el-input>
+            </el-form-item>
+            <el-form-item label="备注" prop="remark">
+                <el-input type="textarea" v-model="ModelFormInfo.remark" maxlength="99" show-word-limit></el-input>
+            </el-form-item>
+            <el-form-item label="日志保留时间" prop="logRetentionDays">
+                <el-input type="number" v-model.number="ModelFormInfo.logRetentionDays" min="0" show-word-limit max="100"></el-input>
+            </el-form-item>
+            <div class="dialog_footer_btn">
+                <el-button size="small" type="primary" @@click="SubmitInserModel()">确定</el-button>
+                <el-button size="small" @@click="resetForm()">取消</el-button>
+            </div>
+        </el-form>
+    </el-dialog>
+
+</div>
+<environment include="Development">
+    <script src="~/js/dev/ModelManagement.js?v=@DateTime.Now.Millisecond"></script>
+</environment>
+<environment exclude="Development">
+    <script src="~/js/dist/ModelManagement.js?v=@DateTime.Now.Millisecond"></script>
+</environment>
+

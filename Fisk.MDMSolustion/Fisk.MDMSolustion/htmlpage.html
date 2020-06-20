@@ -1,0 +1,21 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <title></title>
+    <script type="text/javascript">
+        var jsonObj = { "TableName": "testuser", "Data": { "name": "张三", "address": "中国湖北", "age": 20 } };
+        $.ajax({
+            url: '/System/DataSaveToDB',
+            data: jsonObj,
+            success: function (data) {
+                console.info(data);
+            }
+        });
+    </script>
+</head>
+<body>
+
+</body>
+</html>

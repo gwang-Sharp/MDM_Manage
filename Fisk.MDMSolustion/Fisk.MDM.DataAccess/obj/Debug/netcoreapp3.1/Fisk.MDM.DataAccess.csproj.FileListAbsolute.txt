@@ -1,0 +1,15 @@
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDM.DataAccess\bin\Debug\netcoreapp3.1\Fisk.MDM.DataAccess.deps.json
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDM.DataAccess\bin\Debug\netcoreapp3.1\Fisk.MDM.DataAccess.runtimeconfig.json
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDM.DataAccess\bin\Debug\netcoreapp3.1\Fisk.MDM.DataAccess.runtimeconfig.dev.json
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDM.DataAccess\bin\Debug\netcoreapp3.1\Fisk.MDM.DataAccess.dll
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDM.DataAccess\bin\Debug\netcoreapp3.1\Fisk.MDM.DataAccess.pdb
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDM.DataAccess\bin\Debug\netcoreapp3.1\Fisk.MDM.Utility.dll
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDM.DataAccess\bin\Debug\netcoreapp3.1\Fisk.MDM.Utility.pdb
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDM.DataAccess\obj\Debug\netcoreapp3.1\Fisk.MDM.DataAccess.csprojAssemblyReference.cache
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDM.DataAccess\obj\Debug\netcoreapp3.1\Fisk.MDM.DataAccess.csproj.CoreCompileInputs.cache
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDM.DataAccess\obj\Debug\netcoreapp3.1\Fisk.MDM.DataAccess.AssemblyInfoInputs.cache
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDM.DataAccess\obj\Debug\netcoreapp3.1\Fisk.MDM.DataAccess.AssemblyInfo.cs
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDM.DataAccess\obj\Debug\netcoreapp3.1\Fisk.MDM.DataAccess.csproj.CopyComplete
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDM.DataAccess\obj\Debug\netcoreapp3.1\Fisk.MDM.DataAccess.dll
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDM.DataAccess\obj\Debug\netcoreapp3.1\Fisk.MDM.DataAccess.pdb
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDM.DataAccess\obj\Debug\netcoreapp3.1\Fisk.MDM.DataAccess.genruntimeconfig.cache

@@ -1,0 +1,92 @@
+﻿
+@{
+    ViewData["Title"] = "数据订阅";
+    Layout = null;
+}
+<div id="SubscriptionManage">
+    <el-form :inline="true" class="demo-form-inline" style="margin: 8px 0px; display: flex; justify-content: space-between;">
+        <div>
+            <el-form-item label="模型:" style="margin-bottom: 0px;">
+                <el-select style="margin-left: 2%;" v-model="ModelID" placeholder="请选择模型" @@change="ModelHasChanged">
+                    <el-option v-for="(item,index) in ModelSelectOptions" :key="index" :label="item.name" :value="item.id">
+                    </el-option>
+                </el-select>
+            </el-form-item>
+            <el-form-item label="实体:" style="margin-bottom: 0px;">
+                <el-select style="margin-left: 2%;" v-model="EntityID" placeholder="请选择实体" clearable @@change="EntityHasChanged">
+                    <el-option v-for="(item,index) in EntitySelectOptions" :key="index" :label="item.name" :value="item.id">
+                    </el-option>
+                </el-select>
+            </el-form-item>
+        </div>
+        <el-form-item style="margin-bottom: 0px;">
+            <el-button size='small' circle style="margin-top: 10%" @@click="AddSubscription" type="primary" title="新建" icon="el-icon-plus"></el-button>
+        </el-form-item>
+    </el-form>
+    @*数据订阅数据列表*@
+    <el-row style="margin-top:5px;">
+        <el-table :header-cell-style="headerClass"
+                  :data="TableData"
+                  border
+                  style="width: 100%; overflow-y: auto;"
+                  :height="TableHeight"
+                  v-loading.fullscreen.lock="ColsTabLoading"
+                  element-loading-text="加载中......"
+                  element-loading-background="rgba(255, 255, 255, 0.75)">
+            <el-table-column :key="index" v-for="(item,index) in SubscriptionTableCols"
+                             :prop="item.field"
+                             :label="item.title"
+                             align="center">
+            </el-table-column>
+            <el-table-column label="操作" align="center" width="100">
+                <template slot-scope="scope">
+                    <el-button size="small" class="button_button" plain @@click="handleEdit(scope.row)" circle type="primary" title="编辑" icon="el-icon-edit"></el-button>
+                    <el-button size="small" plain type="danger" circle title="删除" icon="el-icon-delete" @@click="handleDelete(scope.row)"></el-button>
+                </template>
+            </el-table-column>
+        </el-table>
+    </el-row>
+    @*分页控件*@
+    <el-row class="table_footer_btn">
+        <el-pagination background
+                       @@size-change="handleSizeChange"
+                       @@current-change="handleCurrentChange"
+                       :current-page="pagination.currentpage"
+                       :page-sizes="pagination.pagesizes"
+                       :page-size="pagination.pagesize"
+                       layout="total, sizes, prev, pager, next, jumper"
+                       :total="pagination.allNum"
+                       style="position:fixed;">
+        </el-pagination>
+    </el-row>
+    @*添加编辑面板*@
+    <el-dialog :title="DialogTitle" :visible.sync="DialogVisible" :close-on-click-modal="false" :close-on-press-escape="false" width="30%" @@closed="DialoghandleClose">
+        <el-form :model="DataFormModel" ref="DataFormModel" label-position="left" class="demo-ruleForm" label-width="120px" :rules="DataValidationFormRules">
+            <el-form-item label="名称" required prop="Name">
+                <el-input size="mini" v-model="DataFormModel.Name" placeholder="名称" maxlength="50" show-word-limit></el-input>
+            </el-form-item>
+            <el-form-item label="说明" required prop="SubscriptionRemark">
+                <el-input size="mini" v-model="DataFormModel.SubscriptionRemark" placeholder="说明" maxlength="50" show-word-limit></el-input>
+            </el-form-item>
+            <el-form-item label="属性" required prop="AttributeID">
+                <el-select size="small" filterable multiple v-model="DataFormModel.AttributeID" placeholder="请选择属性" style="width:100%">
+                    <el-option v-for="(item,index)  in AttrsSelectOptions" :key="index" :label="item.name" :value="item.id">
+                    </el-option>
+                </el-select>
+            </el-form-item>
+            <el-form-item label="API地址" required prop="Apiaddress">
+                <el-input size="mini" v-model="DataFormModel.Apiaddress" placeholder="请输入API地址" maxlength="50" show-word-limit></el-input>
+            </el-form-item>
+            <div class="dialog_footer_btn">
+                <el-button size="small" type="primary" @@click="SubmitDataFrom" v-html="'保存'"></el-button>
+                <el-button size="small" @@click="DialogCancelAddOrUpdate" v-html="'取消'"></el-button>
+            </div>
+        </el-form>
+    </el-dialog>
+</div>
+<environment include="Development">
+    <script src="~/js/dev/SubscriptionManage.js?v=@DateTime.Now.Millisecond"></script>
+</environment>
+<environment exclude="Development">
+    <script src="~/js/dist/SubscriptionManage.js?v=@DateTime.Now.Millisecond"></script>
+</environment>

@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "defaultProvider": "cdnjs",
+  "libraries": [
+    {
+      "library": "element-ui@2.13.1",
+      "destination": "wwwroot/lib/element-ui/",
+      "files": [
+        "index.js",
+        "theme-chalk/index.css",
+        "theme-chalk/fonts/element-icons.ttf",
+        "theme-chalk/fonts/element-icons.woff"
+      ]
+    }
+  ]
+}

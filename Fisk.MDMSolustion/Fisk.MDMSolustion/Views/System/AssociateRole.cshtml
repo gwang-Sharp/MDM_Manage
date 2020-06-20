@@ -1,0 +1,325 @@
+﻿@{
+    Layout = null;
+}
+
+<style>
+    #RoleConfigurationPermissionsPage {
+        height: 100% !important;
+        width: 100% !important;
+    }
+
+    .layui-row {
+        height: 100% !important;
+        width: 100% !important;
+    }
+
+    .user_title {
+        height: 40px !important;
+        line-height: 40px !important;
+        width: 100% !important;
+        margin-left: 20px !important;
+        font-size: 20px !important;
+        color: orange !important;
+    }
+
+    .search_info {
+        width: 200px !important;
+    }
+
+    .buttonOffset {
+        margin-left: 145px !important
+    }
+
+    .el-tree-node.is-current > .el-tree-node__content {
+        background-color: #c2d6ea !important;
+    }
+
+    .el-table--striped .el-table__body tr.el-table__row--striped.current-row td, .el-table__body tr.current-row > td {
+        color: #fff;
+        background-color: #c2d6ea !important;
+    }
+
+    .el-tabs__content {
+        height: 93% !important;
+        overflow: auto !important;
+    }
+
+    /*.el-tree {
+        height: 95% !important;
+        overflow: auto !important;
+    }*/
+
+    #pane-second {
+        height: 93% !important;
+    }
+
+    .el-input__inner {
+        height: 30px !important;
+        line-height: 30px !important;
+    }
+
+    .el-input__icon {
+        line-height: 30px !important;
+    }
+
+    .el-select-dropdown__wrap {
+        max-height: 700px !important;
+    }
+
+    .el-tabs {
+        margin-top: 0px !important;
+    }
+
+    .layui-body {
+        width: auto !important;
+    }
+
+    .el-table__body tr.current-row > td {
+        color: #606266;
+        background-color: rgb(217, 236, 255) !important;
+    }
+
+    .el-table__body tr.current-row:hover > td {
+        background-color: rgb(217, 236, 255) !important;
+    }
+
+    .abow_dialog {
+        /*display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;*/
+    }
+
+        .abow_dialog .el-dialog {
+            margin: 0 auto !important;
+            height: 90%;
+            top: 56px;
+            overflow: hidden;
+        }
+
+            .abow_dialog .el-dialog .el-dialog__body {
+                position: absolute;
+                left: 0;
+                top: 50px;
+                bottom: 0;
+                right: 0;
+                padding: 0;
+                z-index: 1;
+                overflow: hidden;
+                overflow-y: auto;
+            }
+
+    .el-tabs__header {
+        margin-bottom: 0px;
+    }
+
+    .el-tabs__header {
+        margin: 0;
+    }
+
+    .el-tabs__content {
+        height: 97% !important;
+        overflow: auto !important;
+    }
+
+    .el-treeNodeHeight {
+        /*height: 90% !important;
+        overflow: auto !important;*/
+    }
+</style>
+<body>
+    <div id="AssociateRole" style="height:95%;padding:0px 10px">
+        <el-row :gutter="10"
+                v-loading="BoxLoading"
+                element-loading-text="加载中"
+                element-loading-background="rgba(255, 255, 255, 0.75)">
+            <el-col :span="14">
+                <template>
+                    <el-tabs v-model="activeName" @@tab-click="tab_click">
+                        @*分配用户*@
+                        <el-tab-pane label="用户管理" name="first">
+                            <div class="grid-content bg-purple">
+                                <div style="height:50px;line-height:50px;background-color:#f2f2f2;width:100%;margin-bottom:10px;position:unset">
+                                    <el-input maxlength="50" placeholder="查询" clearable
+                                              style="width:200px;margin-left:20px;height:30px;border-radius:110px"
+                                              prefix-icon="el-icon-search"
+                                              @@keyup.enter.native="GetUserTableList"
+                                              v-model="UserUserName">
+                                    </el-input>
+                                    @*<el-button class="buttonOffset" size="small" circle title="添加用户" @@click="AddUserIfarme" type="primary" icon="el-icon-plus" style="float:right;margin-right:20px;margin:10px"></el-button>*@
+
+                                </div>
+                            </div>
+
+                            <div>
+                                <template>
+                                    <el-table :data="DistributionUserTableData"
+                                              :height="tableHeight"
+                                              style="width: 100%;cursor:pointer"
+                                              highlight-current-row
+                                              :row-key="getRowKey"
+                                              v-loading="UserTableTable"
+                                              element-loading-text="加载中"
+                                              element-loading-background="rgba(255, 255, 255, 0.75)"
+                                              @@current-change="UserTablehandleCurrentChange"
+                                              @@row-style="UserTableRowClass">
+                                        <el-table-column prop="userAccount"
+                                                         label="账户"
+                                                         :show-overflow-tooltip="true">
+                                        </el-table-column>
+                                        <el-table-column prop="userName"
+                                                         label="用户名称"
+                                                         :show-overflow-tooltip="true">
+                                        </el-table-column>
+                                        <el-table-column prop="email"
+                                                         label="电子邮件"
+                                                         :show-overflow-tooltip="true">
+                                        </el-table-column>
+                                        <el-table-column prop="createTime"
+                                                         label="创建时间"
+                                                         :show-overflow-tooltip="true">
+                                        </el-table-column>
+                                        <el-table-column prop="creater"
+                                                         label="创建者"
+                                                         :show-overflow-tooltip="true">
+                                        </el-table-column>
+                                    </el-table>
+                                </template>
+                            </div>
+                            <div class="block" style="text-align:left;padding:0px;position:fixed;bottom:8px;padding-left:9px;">
+                                <el-pagination :page-size="pagesize"
+                                               :page-sizes="[pageMaxsize,20,50]"
+                                               background
+                                               :pager-count="5"
+                                               layout="prev, pager, next,total"
+                                               :total="UsertableDataCount"
+                                               @@current-change="UserhandleCurrentChange_row"
+                                               @@size-change="UserTableDataSize_changesize">
+                                </el-pagination>
+                            </div>
+                        </el-tab-pane>
+
+                        @*菜单权限*@
+                        <el-tab-pane label="菜单权限" name="Eignt">
+                            <div class="grid-content bg-purple">
+                                <div style="height:50px;line-height:50px;background-color:#f2f2f2;width:100%;margin-bottom:10px;position:unset">
+                                    <el-input maxlength="50" placeholder="查询" clearable
+                                              style="width:200px;margin-left:20px;height:30px;border-radius:110px"
+                                              prefix-icon="el-icon-search"
+                                              v-model="MeunPermissionsNameWhere">
+                                    </el-input>
+
+                                    @*<el-button class="buttonOffset" size="small" circle title="菜单权限" @@click="AddMenuOPenIfarme" type="primary" icon="el-icon-plus" style="float:right;margin-right:20px;margin:10px"></el-button>*@
+
+                                </div>
+                            </div>
+
+                            <div :style="{height:screenHeight}"
+                                 v-loading="MenuPermissionTreeLoading"
+                                 element-loading-text="加载中"
+                                 element-loading-background="rgba(255, 255, 255, 0.75)">
+                                <el-tree :data="MenuPermissionTree"
+                                         class="MenuPermissionTreeStyle  el-treeNodeHeight"
+                                         :props="MenutPermissionTreeProps"
+                                         :expand-on-click-node="false"
+                                         ref="Menutree"
+                                         @@node-click="MenuPermissionTreeNodeClick"
+                                         default-expand-all
+                                         empty-text=""
+                                         :filter-node-method="filterNode">
+                                    <span class="custom-tree-node" slot-scope="scope">
+                                        <span :title="scope.node.label" style="display: inline-block; float: left;">
+                                            <i class="el-icon-s-operation" style="color:rgb(247, 181, 99);"></i>&nbsp;{{ scope.node.label }}
+                                        </span>
+                                    </span>
+                                </el-tree>
+                            </div>
+
+                        </el-tab-pane>
+                    </el-tabs>
+                </template>
+            </el-col>
+            <el-col :span="10">
+                <template>
+                    <el-tabs v-model="activeNamess">
+                        <el-tab-pane label="角色管理" name="ninet">
+                            <div class="grid-content bg-purple">
+                                <div style="height:50px;line-height:50px;background-color:#f2f2f2;width:100%;margin-bottom:10px">
+                                    <el-input maxlength="50" placeholder="查询" clearable
+                                              style="width:200px;margin-left:20px;height:30px;border-radius:110px"
+                                              prefix-icon="el-icon-search"
+                                              @@keyup.enter.native="GetRolTableList"
+                                              v-model="where">
+                                    </el-input>
+                                    <el-button type="primary" :disabled="Buttondisabled" size="small" circle @@click="SaveRoleData" style="float:right;margin-right:20px;margin:10px" title=提交><i class="el-icon-check" style="font-size:12px"></i></el-button>
+                                    @*<el-button class="buttonOffset" size="small" circle title="角色管理" @@click="AddROLIfarme" type="primary" icon="el-icon-plus" style="float:right;margin-right:20px;margin:10px"></el-button>*@
+
+                                </div>
+                            </div>
+                        </el-tab-pane>
+                    </el-tabs>
+                </template>
+                <template>
+                    <el-table :data="tableData"
+                              style="width: 100%;cursor:pointer"
+                              @@select="selectCheckBox"
+                              v-loading="Rolloading"
+                              element-loading-text="加载中"
+                              @@select-all="selectCheckBox_ALL"
+                              ref="table"
+                              :height="tableHeight"
+                              :row-key="getRowKey"
+                              @@row-click="RolCheckedSelect"
+                              @@selection-change="RolhandleSelectionChange">
+                        <el-table-column type="selection"
+                                         :reserve-selection="true"
+                                         :selectable='checkboxT'
+                                         :disabled='true'
+                                         :show-overflow-tooltip="true">
+                        </el-table-column>
+
+                        <el-table-column prop="roleName"
+                                         label="角色名称"
+                                         :show-overflow-tooltip="true">
+                        </el-table-column>
+                        <el-table-column prop="roleDesc"
+                                         label="角色描述"
+                                         :show-overflow-tooltip="true">
+                        </el-table-column>
+                        <el-table-column prop="createTime"
+                                         :show-overflow-tooltip="true"
+                                         label="创建时间">
+                        </el-table-column>
+                    </el-table>
+                </template>
+                <div class="block" style="height:36px;line-height:36px;width:100%;position:fixed;bottom:63px;margin-left:14px">
+                    <el-checkbox @*:disabled="Buttondisabled"*@ v-model="ALLchecked" @@change="AllUserChange" style="margin-right:20px">全选所有</el-checkbox>
+                    <span>全部用户中已选<span class="ADTableUserSpan">{{CheckedBoxRolTable.length}}</span></span>&nbsp;|
+                    <span>本页有<span class="ADTableUserSpan">{{tableData.length}}</span>用户</span>&nbsp;|
+                    <span><span class="ADTableUserSpan">{{AssignUsersPagation.total}}</span>用户</span>
+                    <br />
+                </div>
+                <div class="block" style="height:36px;line-height:36px;width:100%;position:fixed;bottom:40px;margin-left:14px">
+                    <el-pagination style="position:fixed;padding-top:20px; margin-left:3px;"
+                                   :page-size="rolePageSize"
+                                   :page-sizes="[rolePageMaxSize,20,50]"
+                                   background
+                                   :pager-count="5"
+                                   layout="prev, pager, next,total"
+                                   :total="tableDataCount"
+                                   :current-page.sync="RoleQueryParameters.page"
+                                   @@current-change="handleCurrentChange"
+                                   @@size-change="TableDataSize_change">
+                    </el-pagination>
+                </div>
+            </el-col>
+        </el-row>
+    </div>
+</body>
+
+<environment include="Development">
+    <script src="~/js/dev/AssociateRole.js?v=@DateTime.Now.Millisecond"></script>
+</environment>
+<environment exclude="Development">
+    <script src="~/js/dist/AssociateRole.js?v=@DateTime.Now.Millisecond"></script>
+</environment>

@@ -1,0 +1,57 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30002.166
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Fisk.MDMSolustion", "Fisk.MDMSolustion\Fisk.MDMSolustion.csproj", "{AA64DE9E-E9AD-46CF-8C23-BC795EF3E9DE}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Fisk.MDM.Utility", "Fisk.MDMUtility\Fisk.MDM.Utility.csproj", "{3D8F5D35-35C1-4C12-BD21-9A187D22409A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Fisk.MDM.ViewModel", "Fisk.MDMViewModel\Fisk.MDM.ViewModel.csproj", "{D3941996-E29E-4E4C-B15B-BC74F100D916}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Fisk.MDM.DataAccess", "Fisk.MDM.DataAccess\Fisk.MDM.DataAccess.csproj", "{C4DD3D27-3113-4E12-A34B-DA84EE13BEFA}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Fisk.MDM.Interface", "Fisk.MDM.Interface\Fisk.MDM.Interface.csproj", "{2EC805AF-2791-45AE-91F1-669FAEEDF5F5}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Fisk.MDM.Business", "Fisk.MDM.Business\Fisk.MDM.Business.csproj", "{8A073013-72EF-4305-9AA6-BBEE2B4B1256}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ExtendedService", "ExtendedService", "{784F724D-2885-4490-BA1E-7179EC903751}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AA64DE9E-E9AD-46CF-8C23-BC795EF3E9DE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AA64DE9E-E9AD-46CF-8C23-BC795EF3E9DE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AA64DE9E-E9AD-46CF-8C23-BC795EF3E9DE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AA64DE9E-E9AD-46CF-8C23-BC795EF3E9DE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3D8F5D35-35C1-4C12-BD21-9A187D22409A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D8F5D35-35C1-4C12-BD21-9A187D22409A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D8F5D35-35C1-4C12-BD21-9A187D22409A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D8F5D35-35C1-4C12-BD21-9A187D22409A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D3941996-E29E-4E4C-B15B-BC74F100D916}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D3941996-E29E-4E4C-B15B-BC74F100D916}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D3941996-E29E-4E4C-B15B-BC74F100D916}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D3941996-E29E-4E4C-B15B-BC74F100D916}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C4DD3D27-3113-4E12-A34B-DA84EE13BEFA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C4DD3D27-3113-4E12-A34B-DA84EE13BEFA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C4DD3D27-3113-4E12-A34B-DA84EE13BEFA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C4DD3D27-3113-4E12-A34B-DA84EE13BEFA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2EC805AF-2791-45AE-91F1-669FAEEDF5F5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2EC805AF-2791-45AE-91F1-669FAEEDF5F5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2EC805AF-2791-45AE-91F1-669FAEEDF5F5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2EC805AF-2791-45AE-91F1-669FAEEDF5F5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8A073013-72EF-4305-9AA6-BBEE2B4B1256}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8A073013-72EF-4305-9AA6-BBEE2B4B1256}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8A073013-72EF-4305-9AA6-BBEE2B4B1256}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8A073013-72EF-4305-9AA6-BBEE2B4B1256}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {177E7A1F-AD83-4660-97EA-1230A3195A01}
+	EndGlobalSection
+EndGlobal

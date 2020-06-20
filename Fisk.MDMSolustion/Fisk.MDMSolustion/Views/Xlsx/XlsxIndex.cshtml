@@ -1,0 +1,151 @@
+﻿
+@{
+    Layout = null;
+}
+
+
+@*<div id="testcontent">
+        <input type="text" id="entityid" placeholder="实体ID" />
+            <input type="button" onclick=outexcel() value="excel下载" />
+        <el-upload class="upload-demo"
+                   ref="upload"
+                   :accept=" .xls, .xlsx"
+                   action="https://jsonplaceholder.typicode.com/posts/"
+                   :on-preview="handlePreview"
+                   :on-remove="handleRemove"
+                   :file-list="fileList"
+                   :auto-upload="false">
+            <el-button slot="trigger" size="small" type="primary">选取文件</el-button>
+            <el-button style="margin-left: 10px;" size="small" type="success" @@click="submitUpload">上传到服务器</el-button>
+            <div slot="tip" class="el-upload__tip">只能上传xlsx/xls文件</div>
+        </el-upload>
+    </div>
+    <script>
+        var testcontent = new Vue({
+            el: "#testcontent",
+        });
+        function outexcel() {
+            var entityid = $("#entityid").val();
+            window.open("/xlsx/OutputExcel?entityid=" + entityid + "");
+        }
+    </script>*@
+
+
+    <div id="testcontent">
+        <input type="button" onclick=muiltAdd() value="多条数据新增" style="margin-bottom:20px;" />
+        <br />
+        <input type="button" onclick=testsimilar() value="测试相似度计算" style="margin-bottom:20px;" />
+        <br />
+        <input type="button" onclick=testexception() value="测试全局异常处理" style="margin-bottom:20px;" />
+        <p>测试Jenkins自动部署</p>
+        <input type="button" onclick=mergedata() value="合并数据" style="margin-bottom:20px;" />
+        <br />
+        <input type="button" onclick=gettoken() value="获取Token" style="margin-bottom:20px;" />
+        <p id="token"></p>
+        <br />
+        <input type="button" onclick=test() value="test Token" style="margin-bottom:20px;" />
+        <p id="result"></p>
+        <br />
+        <input type="text" id="entityid" placeholder="实体ID" />
+        <input type="button" onclick=outexcel() value="excel下载" style="margin-bottom:20px;" />
+
+        <el-upload class="upload-demo"
+                   ref="upload"
+                   accept=".xlsx"
+                   action="/system/UploadExcel"
+                   :data=uploadParam
+                   :auto-upload="false">
+            <el-button slot="trigger" size="small" type="primary">选取文件</el-button>
+            <el-button style="margin-left: 10px;" size="small" type="success" @@click="submitUpload">上传到服务器</el-button>
+            <div slot="tip" class="el-upload__tip">只能上传xlsx/xls文件</div>
+        </el-upload>
+    </div>
+
+<!-- import Vue before Element -->
+<script src="https://unpkg.com/vue/dist/vue.js"></script>
+<!-- import JavaScript -->
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<script>
+    var testvue = new Vue({
+        el: '#testcontent',
+        data: {
+            uploadParam: {
+                entityname: 'channel'
+            },
+        },
+        methods: {
+            submitUpload() {
+                this.$refs.upload.submit();
+            },
+        }
+    });
+    function outexcel() {
+        var entityid = $("#entityid").val();
+        window.open("/xlsx/OutputExcel?entityid=" + entityid + "");
+    }
+    function gettoken() {
+        $.ajax({
+            type: "get",
+            url: "http://192.168.11.201:5004/OAuth/token?name=admin&pwd=123",
+            dataType: "json",
+            success: function (data) {
+                debugger
+                var token = data.authorization;
+                $("#token").text(token);
+            }, error: function (error) {
+                console.log(error);
+            }
+        });
+    }
+    function test() {
+        $.ajax({
+            url: 'http://192.168.11.201:5004/mdmapi/test',
+            headers: {
+                'authorization': $("#token").text()
+            },
+            success: function (data) {
+                $("#result").text(data)
+            },
+            error: function (err) {
+            }
+        });
+    }
+    function mergedata() {
+        $.ajax({
+            url: "/system/MergeData",
+            success: function (data) {
+                console.log(data);
+            }, error: function (error) {
+                console.log(error);
+            }
+        });
+    }
+    function testexception() {
+        $.ajax({
+            url: "/system/testGlobalException",
+            success: function (data) {
+                console.log(data);
+            }, error: function (error) {
+                console.log(error);
+            }
+        });
+    }
+    function testsimilar() {
+        $.ajax({
+            url: "/system/testsimilar",
+            data: { "entityID": "320", "mergingCode":"26522187-4266-4009-bfc5-e77351db7fb6"},
+            success: function (data) {
+                console.log(data);
+            }, error: function (error) {
+                console.log(error);
+            }
+        });
+    }
+    function muiltAdd() {
+        var jsonObj = { "EntityName": "test", "Data": [{ "batch_id": "20200428", "name": "ZBQ", "code": "20", "BissnessRuleStatus": "0", "ValidateStatus": "2" }, { "batch_id": "20200428", "name": "ZBQ11", "code": "201", "BissnessRuleStatus": "0", "ValidateStatus": "2" } ]};
+        $.post('/system/DataSaveEntityMember', { body: JSON.stringify(jsonObj) }, res => {
+
+        });
+    }
+</script>
+

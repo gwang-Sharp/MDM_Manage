@@ -1,0 +1,9 @@
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMViewModel\bin\Release\netcoreapp3.1\Fisk.MDM.ViewModel.deps.json
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMViewModel\bin\Release\netcoreapp3.1\Fisk.MDM.ViewModel.dll
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMViewModel\bin\Release\netcoreapp3.1\Fisk.MDM.ViewModel.pdb
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMViewModel\obj\Release\netcoreapp3.1\Fisk.MDM.ViewModel.csprojAssemblyReference.cache
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMViewModel\obj\Release\netcoreapp3.1\Fisk.MDM.ViewModel.csproj.CoreCompileInputs.cache
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMViewModel\obj\Release\netcoreapp3.1\Fisk.MDM.ViewModel.AssemblyInfoInputs.cache
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMViewModel\obj\Release\netcoreapp3.1\Fisk.MDM.ViewModel.AssemblyInfo.cs
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMViewModel\obj\Release\netcoreapp3.1\Fisk.MDM.ViewModel.dll
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMViewModel\obj\Release\netcoreapp3.1\Fisk.MDM.ViewModel.pdb

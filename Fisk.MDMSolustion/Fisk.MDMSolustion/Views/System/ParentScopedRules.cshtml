@@ -1,0 +1,373 @@
+﻿
+@{
+    ViewData["Title"] = "合并规则管理";
+    Layout = null;
+}
+<style>
+    #stage :first-child {
+        height: 18px;
+        width: 530px;
+        border-radius: 25px;
+    }
+
+    #First .el-slider__bar {
+        background-color: #F56C6C;
+        height: 16px;
+    }
+
+    #First .el-slider__button {
+        background-color: #F56C6C;
+        border: 2px solid #F56C6C;
+        margin-top: 10px;
+        width: 25px;
+        height: 13px;
+    }
+
+    #First .el-slider__runway {
+        height: 17px;
+    }
+
+
+    #Soncend .el-slider__bar {
+        background-color: #E6A23C;
+        height: 16px;
+    }
+
+    #Soncend .el-slider__button {
+        background-color: #E6A23C;
+        border: 2px solid #E6A23C;
+        margin-top: 10px;
+        width: 25px;
+        height: 13px;
+    }
+
+    #Soncend .el-slider__runway {
+        height: 17px;
+    }
+
+    #three .el-slider__bar {
+        background-color: #67C23A;
+        height: 16px;
+    }
+
+    #three .el-slider__runway {
+        height: 17px;
+    }
+
+    #three .el-slider__button {
+        background-color: #67C23A;
+        border: 2px solid #67C23A;
+        margin-top: 10px;
+        width: 25px;
+        height: 13px;
+    }
+</style>
+<link href="~/lib/bootstrap/css/bootstrap.css" rel="stylesheet" />
+<div id="MergeRuleManage"
+     v-loading="BeginBeginMergeDataloading"
+     element-loading-text="正在执行中，请稍等....">
+
+    <el-row style="margin: 8px 0px;">
+        <el-col :span="24">
+
+            <el-select size="small" style="margin-left: 2%;width:20%" v-model="ModelName" placeholder="请选择模型" @@change="ModelHasChanged">
+                <el-option v-for="item in ModelSelectOptions" :key="item.id" :label="item.name" :value="item.id">
+                </el-option>
+            </el-select>
+
+            <el-select size="small" style="margin-left: 2%;width:20%" v-model="EntityName" placeholder="请选择实体" @@change="EntityHasChanged">
+                <el-option v-for="item in EntitySelectOptions" :key="item.id" :label="item.name" :value="item.id">
+                </el-option>
+            </el-select>
+            <el-button size="small" @@click="OpenRuleBaseDialog" type="primary" circle title="新建" icon="el-icon-plus" style="margin-right:20px;float:right;margin-top:0.3%"></el-button>
+
+        </el-col>
+    </el-row>
+    <el-row>
+        <el-table :data="RuleBaseTableData"
+                  :height="tableHeight"
+                  :header-cell-style="headerClass"
+                  style="width: 100%"
+                  v-loading.fullscreen.lock="RuleBaseTabLoading"
+                  element-loading-text="加载中......"
+                  element-loading-background="rgba(255, 255, 255, 0.75)"
+                  ref="RuleBaseTableData">
+            <el-table-column label="序号"
+                             align="center"
+                             width="80">
+                <template scope="scope">
+                    <span>{{scope.$index+(pagenum - 1) * pagesize + 1}} </span>
+                </template>
+            </el-table-column>
+            <el-table-column prop="modelName"
+                             label="模型"
+                             width="100"
+                             align="center"
+                             show-overflow-tooltip>
+            </el-table-column>
+            <el-table-column prop="entityName"
+                             label="实体"
+                             align="center"
+                             width="100"
+                             show-overflow-tooltip>
+            </el-table-column>
+            <el-table-column prop="cleaningRules"
+                             label="清洗规则"
+                             align="center"
+                             show-overflow-tooltip>
+            </el-table-column>
+            <
+            <el-table-column prop="creater"
+                             show-overflow-tooltip
+                             width="180"
+                             align="center"
+                             label="创建者">
+            </el-table-column>
+
+            <el-table-column prop="createTime"
+                             show-overflow-tooltip
+                             width="200"
+                             align="center"
+                             label="创建时间">
+            </el-table-column>
+            <el-table-column prop="state"
+                             width="100"
+                             label="状态"
+                             align="center"
+                             show-overflow-tooltip>
+                <template scope="scope">
+                    <el-button size="small" v-if="scope.row.state=='执行'" class="button_button" type="primary" plain title="执行">{{scope.row.state}}</el-button>
+                    <el-button size="small" v-if="scope.row.state=='空闲'" class="button_button" type="success" plain title="空闲">{{scope.row.state}}</el-button>
+                </template>
+            </el-table-column>
+            <el-table-column label="操作" width="300">
+                <template scope="scope">
+                    <el-button size="small" class="button_button" plain circle @@click="BeginMergeData(scope.$index, scope.row)" type="primary" title="执行" icon="el-icon-monitor"></el-button>
+                    <el-button size="small" class="button_button" plain @@click="OpenRuleBaseEditDialog(scope.$index, scope.row)" circle type="primary" title="编辑规则" icon="el-icon-edit"></el-button>
+                    <el-button size="small" class="button_button" plain circle type="primary" @@click="SetTheThresholddialog(scope.row)" title="编辑阀值" icon="el-icon-key"></el-button>
+                    <el-button size="small" class="button_button" plain @@click="ResultHandlingdialogVisible=true" circle type="primary" title="查看" icon="el-icon-view"></el-button>
+                    <el-button size="small" plain type="danger" title="删除" circle icon="el-icon-delete" @@click="DelRuleBase(scope.row)"></el-button>
+                </template>
+            </el-table-column>
+        </el-table>
+        @*分页*@
+        <el-pagination background
+                       style="text-align: center;"
+                       @@size-change="handleSizeChange"
+                       @@current-change="handleCurrentChange"
+                       :current-page="pagenum"
+                       :page-size="pagesize"
+                       :page-sizes="[pageMaxsize,20,50]"
+                       layout="total, sizes, prev, pager, next, jumper"
+                       :total="total">
+        </el-pagination>
+    </el-row>
+
+
+    @*---------------------------- 数据维护面板开始-------------*@
+    @*添加用户和修改用户*@
+    <el-dialog :title="Title"
+               :visible.sync="AddRuleBasedialogVisible"
+               width="30%"
+               height="80%"
+               :append-to-body="true"
+               :close-on-click-modal="false"
+               :close-on-press-escape="false"
+               @@close="ClosedAddRuleBasedialog">
+        <el-form label-position="left" style="height:350px" :model="RuleBaseForm" ref="RuleBaseForm" :rules="RuleBaseRules" label-width="58px">
+            <el-row style="height:12%">
+
+                <el-button size="mini" @@click="AddRuleBase" type="primary" circle title="新建" icon="el-icon-plus" style="margin-right:20px;float:right;margin-top:0.3%"></el-button>
+            </el-row>
+            <div style="height:250px;overflow:hidden;overflow-y:scroll">
+                <el-row v-for="items in RulesOfTheData" style="margin-top:5px;">
+                    <el-col :offset="1" :span="9">
+                        属性
+                        <el-select maxlength="50" style="width:70%" show-word-limit @@change="AttributeNameDialogChange($event,items.Index)" v-model="items.AttributeName" placeholder="请选择模型">
+                            <el-option v-for="item in AttributeSelectOptions" :key="item.id" :label="item.name" :value="item.id">
+                            </el-option>
+                        </el-select>
+
+                    </el-col>
+                    <el-col :span="12">
+                        <el-select style="width:40%" v-model="items.AttributeValue" @@change="AttributeNameChange($event,items.Index)" placeholder="请选择">
+                            <el-option value="权重">
+                                权重
+                            </el-option>
+                            <el-option value="分组">
+                                分组
+                            </el-option>
+                        </el-select>
+                        <span v-if="items.WeightIsShow"><el-input-number size="medium" style="width:50%" v-model="items.Weight" style="width:70%" @@change="NumberhandleChange" controls-position="right" :min="0" :max="100"></el-input-number>%</span>
+
+                    </el-col>
+                    <el-col :offset="0.2" :span="2">
+                        <el-button style="margin-top: 7px;" size="mini" plain type="danger" title="删除" circle icon="el-icon-delete" @@click="DelRule(items)"></el-button>
+                    </el-col>
+                </el-row>
+
+            </div>
+            <div style="margin-left:5%"> 注:权重值和必须为100%</div>
+            <div class="dialog_footer_btn">
+                <el-button size="small" type="primary" @@click="SubmitRuleBaseForm('RuleBaseForm')">提交</el-button>
+                <el-button size="small" @@click="CloseRuleBasedialogVisible('RuleBaseForm')">取消</el-button>
+            </div>
+
+        </el-form>
+    </el-dialog>
+
+    @*设置阀值*@
+    <el-dialog title="设置合并阀值"
+               :visible.sync="SetTheThresholddialogVisible"
+               width="30%"
+               :append-to-body="true"
+               :close-on-click-modal="false"
+               @@close="ClosedAddRuleBasedialog">
+
+        <el-row style="height:230px !important">
+            <el-row style="margin-top:50px;">
+                <el-col :span="8">
+                    <span style="font-size:20px">手动合并阀值</span>
+                </el-col>
+                <el-col :span="8">
+                    <span style="margin-left:20px;font-size:20px">{{slider}}%</span>
+                </el-col>
+            </el-row>
+            <el-row>
+                <el-col :span="24" style="margin-top:60px">
+                    <template>
+                        <div class="block">
+                            <el-slider @@change="SliderChange" v-model="slider">
+
+                            </el-slider>
+                        </div>
+                    </template>
+
+                </el-col>
+            </el-row>
+            @*<el-col :span="24">
+                    <span style="margin-bottom:10px;margin-left:45%">
+                        注:阀值总和必须等于100%;当前阀值总和为<span style="color:brown">{{SliderThreeWidth+SliderSoncendWidth+SliderFirstWidth}}%</span>
+                    </span>
+                    <el-row style="margin-top:50px;margin-bottom:25px">
+
+                        <el-col :span="24">
+                            <template>
+                                <el-col :span="6" style="margin-top: 12px;font-size: 16px;">
+                                    不做处理并阀值
+                                </el-col>
+                                <el-col :span="14">
+                                    <div class="block">
+                                        <el-slider v-model="SliderFirstWidth" id="First" style="color:#F56C6C"></el-slider>
+                                    </div>
+                                </el-col>
+                                <el-col :offset="1" :span="2" style="margin-top: 12px;font-size: 16px;">
+                                    {{SliderFirstWidth}}%
+                                </el-col>
+                            </template>
+                        </el-col>
+                        <el-col :span="24">
+                            <template>
+                                <el-col :span="6" style="margin-top: 12px;font-size: 16px;">
+                                    手动合并阀值
+                                </el-col>
+                                <el-col :span="14">
+                                    <div class="block">
+                                        <el-slider v-model="SliderSoncendWidth" id="Soncend" style="color:#F56C6C"></el-slider>
+                                    </div>
+                                </el-col>
+                                <el-col :offset="1" :span="2" style="margin-top: 12px;font-size: 16px;">
+                                    {{SliderSoncendWidth}}%
+                                </el-col>
+                            </template>
+                        </el-col>
+                        <el-col :span="24">
+                            <template>
+                                <el-col :span="6" style="margin-top: 12px;font-size: 16px;">
+                                    自动合并阀值
+                                </el-col>
+                                <el-col :span="14">
+                                    <div class="block">
+                                        <el-slider v-model="SliderThreeWidth" id="three" style="color:#F56C6C"></el-slider>
+                                    </div>
+                                </el-col>
+                                <el-col :offset="1" :span="2" style="margin-top: 12px;font-size: 16px;">
+                                    {{SliderThreeWidth}}%
+                                </el-col>
+                            </template>
+                        </el-col>
+                    </el-row>
+                </el-col>*@
+
+        </el-row>
+        <div class="dialog_footer_btn">
+            <el-button size="small" type="primary" @@click="ChangeThreshold">提交</el-button>
+            <el-button size="small" @@click="SetTheThresholddialogVisible=false">取消</el-button>
+        </div>
+
+    </el-dialog>
+    @*添加用户和修改用户*@
+    <el-dialog title="处理结果"
+               :visible.sync="ResultHandlingdialogVisible"
+               width="30%"
+               height="80%"
+               :append-to-body="true"
+               :close-on-click-modal="false"
+               @@close="ClosedAddRuleBasedialog">
+        <el-row>
+            <el-col :span="18" :offset="4" style="background-color:#67C23A;height:100px;width:300px;border-radius:10px;margin-top:10px">
+                <el-row>
+                    <el-col :span="10">
+                        <span style="color:#F2F2F2;font-size:18px;margin-left:10px">已合并</span>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <span style="color:#F2F2F2;margin-left:35%;font-size:35px">1299</span>
+                </el-row>
+            </el-col>
+        </el-row>
+        <el-row>
+            <el-col :span="15" :offset="4" style="background-color:#E6A23C;height:100px;width:300px;border-radius:10px;margin-top:10px">
+                <el-row>
+                    <el-col :span="10">
+                        <span style="color:#F2F2F2;font-size:18px;margin-left:10px">需手动</span>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <span style="color:#F2F2F2;margin-left:35%;font-size:35px">157</span>
+                </el-row>
+            </el-col>
+            <el-col :span="3" :offset="1" style="margin-top:50px">
+                <el-button round icon="el-icon-bottom"></el-button>
+            </el-col>
+        </el-row>
+        <el-row>
+            <el-col :span="15" :offset="4" style="background-color:#DCDFE6;height:100px;width:300px;border-radius:10px;margin-top:10px">
+                <el-row>
+                    <el-col :span="10">
+                        <span style="color:#7F7F7F;font-size:18px;margin-left:10px">未处理</span>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <span style="color:#7F7F7F;margin-left:35%;font-size:35px">166</span>
+                </el-row>
+            </el-col>
+            <el-col :span="3" :offset="1" style="margin-top:50px">
+                <el-button round icon="el-icon-bottom"></el-button>
+            </el-col>
+        </el-row>
+    </el-dialog>
+    @*---------------------------- 数据维护面板结束-------------*@
+
+
+
+
+</div>
+<script src="~/lib/jquery/jquery-3.3.1.min.js"></script>
+<environment include="Development">
+    <script src="~/js/dev/ParentScopedRules.js?v=@DateTime.Now.Millisecond"></script>
+</environment>
+<environment exclude="Development">
+    <script src="~/js/dist/ParentScopedRules.js?v=@DateTime.Now.Millisecond"></script>
+</environment>
+<script src="~/lib/jquery/dist/core.min.js"></script>
