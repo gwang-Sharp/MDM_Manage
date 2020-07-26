@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "+/mv5K0qkJlDQF2MNQmegtB1ijXY18BseTQ4m3SxtVnBWHD9o3hkgtGVprwWpMk8uwau+M8740Jrjlyn79Oy3w==",
+  "dgSpecHash": "PhxlX6uDW79P4SqBXQauCU5Z8QVABozdZg1iLQmYemoeK/BFhz2CeCoutHC6Zy2UQ0xakAEncRzjnPApjHUJ2w==",
   "success": true,
   "projectFilePath": "F:\\FISK\\project\\MDM\\Fisk.MDMSolustion\\Fisk.MDMUtility\\Fisk.MDM.Utility.csproj",
   "expectedPackageFiles": [
@@ -52,7 +52,7 @@
     "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder\\microsoft.codeanalysis.common\\2.8.0\\microsoft.codeanalysis.common.2.8.0.nupkg.sha512",
     "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder\\microsoft.codeanalysis.csharp\\2.8.0\\microsoft.codeanalysis.csharp.2.8.0.nupkg.sha512",
     "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder\\microsoft.codeanalysis.razor\\2.2.0\\microsoft.codeanalysis.razor.2.2.0.nupkg.sha512",
-    "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder\\microsoft.csharp\\4.5.0\\microsoft.csharp.4.5.0.nupkg.sha512",
+    "C:\\Users\\WangGang\\.nuget\\packages\\microsoft.csharp\\4.5.0\\microsoft.csharp.4.5.0.nupkg.sha512",
     "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder\\microsoft.dotnet.platformabstractions\\2.1.0\\microsoft.dotnet.platformabstractions.2.1.0.nupkg.sha512",
     "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder\\microsoft.extensions.caching.abstractions\\2.2.0\\microsoft.extensions.caching.abstractions.2.2.0.nupkg.sha512",
     "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder\\microsoft.extensions.caching.memory\\2.2.0\\microsoft.extensions.caching.memory.2.2.0.nupkg.sha512",

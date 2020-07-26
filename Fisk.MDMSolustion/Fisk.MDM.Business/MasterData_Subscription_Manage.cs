@@ -21,11 +21,9 @@ namespace Fisk.MDM.Business
     public class MasterData_Subscription_Manage: IMasterData_Subscription_Manage
     {
         private readonly MDMDBContext _dbContext;
-        private readonly SessionHelper helper;
-        public MasterData_Subscription_Manage(MDMDBContext dbContext, IHttpContextAccessor httpContextAccessor)
+        public MasterData_Subscription_Manage(MDMDBContext dbContext)
         {
             this._dbContext = dbContext;
-            helper = new SessionHelper(httpContextAccessor);
         }
         #region 数据订阅 WG
         /// <summary>

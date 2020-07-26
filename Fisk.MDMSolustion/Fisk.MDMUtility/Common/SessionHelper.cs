@@ -4,19 +4,20 @@
 //Create Date: 2020年4月21日16:02:22
 //*********************************************************************************
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 
 namespace Fisk.MDM.Utility.Common
 {
-    public  class SessionHelper
+    public class SessionHelper
     {
 
         private static IHttpContextAccessor _httpContextAccessor;
         private static ISession _session => _httpContextAccessor.HttpContext.Session;
 
-        public SessionHelper(IHttpContextAccessor httpContextAccessor)
+        internal static void Configure(IHttpContextAccessor accessor)
         {
-            _httpContextAccessor = httpContextAccessor;
+            _httpContextAccessor = accessor;
         }
         /// <summary>
         /// 设置Session
@@ -25,7 +26,7 @@ namespace Fisk.MDM.Utility.Common
         /// <param name="value">值</param>
         public static void SetSession(string key, string value)
         {
-            _session.SetString(key, value);  
+            _session.SetString(key, value);
         }
 
         /// <summary>

@@ -7,7 +7,8 @@
     <meta http-equiv="pragma" content="no-cache" />
     <meta HTTP-EQUIV="Cache-Control" CONTENT="no-cache, must-revalidate">
     @*<link rel="icon" type="image/x-icon" href="/favicon.ico" />*@
-    <title>Fisk_MDM</title>
+    <link rel="icon" href="/Img/Login/title_logo.png" type="image/x-icon">
+    <title>菲仕兰主数据管理</title>
     <style>
         [v-cloak] {
             display: none;
@@ -20,10 +21,18 @@
         .el-aside ul {
             border-right-width: 0 !important;
         }
+
+        .header_right {
+            display: flex;
+            line-height: 40px;
+            margin-right: 10px;
+            float: right;
+        }
     </style>
     @*------------- css引用 ------------*@
     <link href="~/lib/element-ui/theme-chalk/index.css" rel="stylesheet" />
     <link href="~/css/Layout/Layout.css" rel="stylesheet" />
+    <link href="~/lib/layui/css/modules/layui-icon-extend/iconfont.css" rel="stylesheet" />
     @*-------------- js引用 -------------*@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/Vue/vue.js"></script>
@@ -34,6 +43,7 @@
         <el-container style="height:100%">
             @*---------- 左侧菜单menu -----------*@
             <el-aside style="height:100%;width:auto;">
+                <img src="~/Img/Login/Title_Left.png"  style="height:60px;width:190px" v-show="LogoShow" />
                 <el-menu default-active="MenuAutoSetting" class="el-menu-vertical-demo" :collapse="isCollapse" :unique-opened="true" :background-color="ThemeSetting" active-text-color="#409EFF">
                     <template v-for="(item,index) in NavTreeList">
                         <el-submenu v-if="item.children.length>0" :index="item.navCode" :key="index" v-cloak>
@@ -54,12 +64,23 @@
             </el-aside>
             @*------------- 右侧内容 -----------*@
             <el-container>
-                <el-header>
+                @*<el-header>
+                        <el-card shadow="always">
+                            <div @@click="Collapse" style="padding:0px 15px;cursor:pointer;height:40px;line-height:40px;float:left;">
+                                <i class="el-icon-s-fold"></i>
+                            </div>
+                            <p style="color:red">用户名: @User.Claims.First().Value</p>
+                        </el-card>
+                    </el-header>*@
+                <el-header style="height:40px">
                     <el-card shadow="always">
                         <div @@click="Collapse" style="padding:0px 15px;cursor:pointer;height:40px;line-height:40px;float:left;">
                             <i class="el-icon-s-fold"></i>
                         </div>
-                        <p style="color:red">用户名: @User.Claims.First().Value</p>
+                        <div class="header_right">
+                            <p style="color: whitesmoke;margin-right: 20px;">用户名: @User.Claims.First().Value</p>
+                            <a style="color:whitesmoke;text-decoration:none" href="/Login/Logout">退出</a>
+                        </div>
                     </el-card>
                 </el-header>
                 <el-main>

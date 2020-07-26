@@ -185,3 +185,14 @@ F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMSolustion\obj\Release\netcoreapp3.
 F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMSolustion\obj\Release\netcoreapp3.1\linux-x64\Fisk.MDMSolustion.genruntimeconfig.cache
 F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMSolustion\bin\Release\netcoreapp3.1\linux-x64\log4net.Config
 F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMSolustion\bin\Release\netcoreapp3.1\linux-x64\Dockerfile
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMSolustion\bin\Release\netcoreapp3.1\linux-x64\package-lock.json
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMSolustion\bin\Release\netcoreapp3.1\linux-x64\package.json
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMSolustion\bin\Release\netcoreapp3.1\linux-x64\Microsoft.AspNetCore.Authentication.JwtBearer.dll
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMSolustion\bin\Release\netcoreapp3.1\linux-x64\Microsoft.Extensions.Http.dll
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMSolustion\bin\Release\netcoreapp3.1\linux-x64\Microsoft.IdentityModel.Protocols.dll
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMSolustion\bin\Release\netcoreapp3.1\linux-x64\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMSolustion\bin\Release\netcoreapp3.1\linux-x64\NodaTime.dll
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMSolustion\bin\Release\netcoreapp3.1\linux-x64\System.Runtime.CompilerServices.Unsafe.dll
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMSolustion\obj\Release\netcoreapp3.1\linux-x64\Razor\Views\System\CommonToolView.cshtml.g.cs
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMSolustion\obj\Release\netcoreapp3.1\linux-x64\Razor\Views\System\SubscriptionManage.cshtml.g.cs
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMSolustion\obj\Release\netcoreapp3.1\linux-x64\Razor\Views\System\VersionManagement.cshtml.g.cs

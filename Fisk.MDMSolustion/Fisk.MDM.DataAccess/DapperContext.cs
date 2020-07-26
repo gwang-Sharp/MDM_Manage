@@ -17,11 +17,25 @@ namespace Fisk.MDM.DataAccess
 {
     public class DapperContext
     {
+        public static string conStr;
+        public static string Env;
+        static DapperContext()
+        {
+            Env = AppsettingsHelper.GetSection("Env");
+            if (Env == "Uat" || Env == "Prd")
+            {
+                conStr = AppsettingsHelper.GetSection("ConnectionString" + Env + ":MysqlConnection");
+            }
+            else
+            {
+                conStr = AppsettingsHelper.GetSection("ConnectionStringLocalhost:MysqlConnection");
+            }
+        }
         //连接字符串
-        public static string connectionString = AppsettingsHelper.GetSection("ConnectionStrings:MysqlConnection");
+
         public static MySqlConnection Connection()
         {
-            var mysql = new MySqlConnection(connectionString);
+            var mysql = new MySqlConnection(conStr);
             mysql.Open();
             return mysql;
         }

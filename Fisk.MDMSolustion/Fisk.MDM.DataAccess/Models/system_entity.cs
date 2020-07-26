@@ -11,6 +11,8 @@ namespace Fisk.MDM.DataAccess.Models
         public string Remark { get; set; }
         public int? BeganIn { get; set; }
         public string StageTable { get; set; }
+        public string EntityTable { get; set; }
+        public string HistoryTable { get; set; }
         public string ValiditeProc { get; set; }
         public string BusinessProc { get; set; }
         public string DataImportProc { get; set; }
@@ -19,7 +21,5 @@ namespace Fisk.MDM.DataAccess.Models
         public DateTime? CreateTime { get; set; }
         public string Updater { get; set; }
         public DateTime? UpdateTime { get; set; }
-        public string EntityTable { get; set; }
-        public string HistoryTable { get; set; }
     }
 }

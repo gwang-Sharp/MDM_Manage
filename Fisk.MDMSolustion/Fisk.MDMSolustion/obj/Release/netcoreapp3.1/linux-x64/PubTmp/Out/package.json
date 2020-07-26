@@ -1,0 +1,19 @@
+{
+  "name": "fisk.mdmsolution",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "Systemjspackage": "./node_modules/.bin/babel ./wwwroot/js/dev/ -d ./wwwroot/js/dist/"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/cli": "^7.4.4",
+    "@babel/core": "^7.4.5",
+    "@babel/preset-env": "^7.4.5",
+    "babel-preset-vue": "^2.0.2"
+  },
+  "dependencies": {
+    "@babel/polyfill": "^7.4.4"
+  }
+}

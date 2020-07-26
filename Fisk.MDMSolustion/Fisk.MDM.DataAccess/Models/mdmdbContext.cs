@@ -39,7 +39,6 @@ namespace Fisk.MDM.DataAccess.Models
         public virtual DbSet<system_version_snapshot> system_version_snapshot { get; set; }
         public virtual DbSet<system_version_snapshot_detail> system_version_snapshot_detail { get; set; }
         public virtual DbSet<system_version_zipper> system_version_zipper { get; set; }
-        public virtual DbSet<testaddress> testaddress { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -607,7 +606,7 @@ namespace Fisk.MDM.DataAccess.Models
                     .HasCollation("utf8mb4_general_ci");
 
                 entity.Property(e => e.ErrorMsg)
-                    .HasColumnType("varchar(1000)")
+                    .HasColumnType("text")
                     .HasCharSet("utf8mb4")
                     .HasCollation("utf8mb4_general_ci");
 
@@ -1288,21 +1287,6 @@ namespace Fisk.MDM.DataAccess.Models
 
                 entity.Property(e => e.Value)
                     .IsRequired()
-                    .HasColumnType("varchar(255)")
-                    .HasCharSet("utf8mb4")
-                    .HasCollation("utf8mb4_general_ci");
-            });
-
-            modelBuilder.Entity<testaddress>(entity =>
-            {
-                entity.Property(e => e.id).HasColumnType("int(11)");
-
-                entity.Property(e => e.address)
-                    .HasColumnType("varchar(255)")
-                    .HasCharSet("utf8mb4")
-                    .HasCollation("utf8mb4_general_ci");
-
-                entity.Property(e => e.code)
                     .HasColumnType("varchar(255)")
                     .HasCharSet("utf8mb4")
                     .HasCollation("utf8mb4_general_ci");

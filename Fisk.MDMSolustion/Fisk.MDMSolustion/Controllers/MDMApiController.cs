@@ -22,7 +22,7 @@ namespace Fisk.MDMSolustion.Controllers
     public class MDMApiController : Controller
     {
         private readonly IMasterDataManage _masterdatamanage;
-        private readonly IMasterData_Maintain_Manage  maintain_Manage;
+        private readonly IMasterData_Maintain_Manage maintain_Manage;
         public MDMApiController(IMasterDataManage MasterDataManage, IMasterData_Maintain_Manage _Maintain_Manage)
         {
             this._masterdatamanage = MasterDataManage;
@@ -88,7 +88,9 @@ namespace Fisk.MDMSolustion.Controllers
         {
             string entityid = Request.Query["entityID"].FirstOrDefault();
             string workflow_instanceid = Request.Query["workflow_instanceid"].FirstOrDefault();
-            var result = _masterdatamanage.GetWorkFlow_ApproveData(workflow_instanceid, entityid);
+            int Page = int.Parse(Request.Form["Page"].ToString());
+            int Rows = int.Parse(Request.Form["Rows"].ToString());
+            var result = _masterdatamanage.GetWorkFlow_ApproveData(workflow_instanceid, entityid, Page, Rows);
             return result;
         }
         [HttpPost]
@@ -102,7 +104,7 @@ namespace Fisk.MDMSolustion.Controllers
         {
             string entityid = Request.Query["entityID"].FirstOrDefault();
             string workflow_instanceid = Request.Query["workflow_instanceid"].FirstOrDefault();
-            var result = _masterdatamanage.GetWorkFlow_ApproveData(workflow_instanceid, entityid);
+            var result = _masterdatamanage.ApproveData_OK(workflow_instanceid, entityid);
             return result;
         }
 

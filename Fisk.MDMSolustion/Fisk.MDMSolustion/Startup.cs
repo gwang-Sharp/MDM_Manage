@@ -1,4 +1,5 @@
 using Fisk.MDM.DataAccess.Models;
+using Fisk.MDM.Utility.Common;
 using Fisk.MDM.Utility.Middleware;
 using Fisk.MDMSolustion.Models;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -29,12 +30,24 @@ namespace Fisk.MDMSolustion
     //配置web应用所需的服务和中间件
     public class Startup
     {
+        public IConfiguration Configuration { get; set; }
+        public string conStr { get; set; }
+        public string Env { get; set; }
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
+            Env = Configuration.GetSection("Env").Value;
+            if (Env == "Uat" || Env == "Prd")
+            {
+                conStr = Configuration.GetSection("ConnectionString" + Env + ":MysqlConnection").Value;
+            }
+            else
+            {
+                conStr = Configuration.GetSection("ConnectionStringLocalhost:MysqlConnection").Value;
+            }
         }
 
-        public IConfiguration Configuration { get; }
+
         readonly string MyAllowSpecificOrigins = "_myAllowSpecificOrigins";//
 
         // This method gets called by the runtime. Use this method to add services to the container.
@@ -85,18 +98,7 @@ namespace Fisk.MDMSolustion
                 //option.ExpireTimeSpan = new TimeSpan(1, 0, 0);//默认14天
             });
             //使用SignalR
-            services.AddSignalR(options =>
-            {
-                //处理数据量大超时连接
-                options.HandshakeTimeout = TimeSpan.FromSeconds(1800);
-                options.ClientTimeoutInterval = TimeSpan.FromSeconds(1800);
-                //options.KeepAliveInterval = TimeSpan.FromSeconds(1800);
-                options.EnableDetailedErrors = true;
-            }).AddJsonProtocol(options =>
-            {
-                options.PayloadSerializerOptions.Encoder = JavaScriptEncoder.Create(UnicodeRanges.All);//处理json返回的中文被转义
-                options.PayloadSerializerOptions.Converters.Add(new DateTimeConverter());//处理json返回的时间格式
-            });
+            services.AddSignalR();
             //服务容器 IOC(控制反转)容器 注册类型，请求实例
             services.AddSession(); //该怎么去用session
             services.AddControllersWithViews();//添加控制器和视图
@@ -129,80 +131,16 @@ namespace Fisk.MDMSolustion
                     services.AddScoped(typeArray, item.Key);
                 }
             }
-            services.AddDbContext<MDMDBContext>(options => options.UseMySql(Configuration.GetConnectionString("MysqlConnection")));
+            services.AddDbContext<MDMDBContext>(options => options.UseMySql(conStr));
             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance); //解决 "ExcelDataReader引发NotSupportedException 没有数据可用于编码1252" 的问题   Dennyhui
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, MDMDBContext mysqlDbContext)
         {
-            //一个步骤或者多个步骤
-            //RequestDelegate
-
-            #region middleware
-            //app.Use(next =>
-            //{
-            //    Console.WriteLine("Middleware 1 out");
-            //    return new RequestDelegate(
-            //       async context =>
-            //        {
-            //            await context.Response.WriteAsync("This is Middleware 1 start");
-            //            await next.Invoke(context);
-            //            await context.Response.WriteAsync("This is Middleware 1 end");
-            //        });
-            //});
-            //app.Use(next =>
-            //{
-            //    Console.WriteLine("Middleware 2 out");
-            //    return new RequestDelegate(
-            //       async context =>
-            //       {
-            //           await context.Response.WriteAsync("This is Middleware 2 start");
-            //           await next.Invoke(context);
-            //           await context.Response.WriteAsync("This is Middleware 2 end");
-            //       });
-            //});
-            //app.Use(
-            //    next =>
-            //    {
-            //        Console.WriteLine("Middleware 3 out");
-            //        return new RequestDelegate(
-            //           async context =>
-            //           {
-            //               await context.Response.WriteAsync("This is Middleware 3 start");
-            //               //next.Invoke(context);//404
-            //               await context.Response.WriteAsync("This is Middleware 3 end");
-            //           });
-            //    }
-            //);
-            //1 是一张白纸，没有任何内置的东西，要什么写什么，pay-for-what-you-use
-            //2 很容易扩展---任意环节任意顺序都可以扩展
-
-            //第一阶段是初始化，调用Build---得到RequestDelegate-middleware1(包含了next引用)--这就是管道
-            //然后等着请求来---Context--一层层调用，然后就俄罗斯套娃(revserse顺序舒服点)
-
-            //写法不清楚加下小助教，有专门讲过await async +委托
-            #endregion
-
-
-            #region 权限认证
-            //app.Use(next =>
-            //{
-            //    return async c =>
-            //    {
-            //        if (c.Request.Query.ContainsKey("Name"))
-            //        {
-            //            await next.Invoke(c);
-            //        }
-            //        else
-            //        {
-            //            await c.Response.WriteAsync("No Authorization");
-            //        }
-            //    };
-            //});
-            #endregion
+            //初始化SessionHelper、CookieHelper实例成员 
+            app.UseStaticHttpContext();
             //添加http请求
             app.UseCookiePolicy();
-
             //app.UseHttpsRedirection();
 
             app.UseHttpMethodOverride();
@@ -230,8 +168,6 @@ namespace Fisk.MDMSolustion
                         return Task.CompletedTask;
                     }
                 });
-                app.UseExceptionHandler("/Home/Error");
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
             app.UseStaticFiles(new StaticFileOptions()

@@ -17,7 +17,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Newtonsoft.Json;
-using NPOI.HPSF;
 using System;
 using System.Threading.Tasks;
 
@@ -25,7 +24,11 @@ namespace Fisk.MDMSolustion.Models
 {
     public class GlobalExceptionFilter : IExceptionFilter
     {
-        MDMDBContext dbc = new MDMDBContext();
+        private readonly MDMDBContext _dbContext;
+        public GlobalExceptionFilter(MDMDBContext dbContext)
+        {
+            this._dbContext = dbContext;
+        }
         /// <summary>
         /// 发生异常时进入
         /// </summary>
@@ -51,9 +54,10 @@ namespace Fisk.MDMSolustion.Models
                 sgel.CreateTime = DateTime.Now;
                 sgel.Controller = context.RouteData.Values["controller"].ToString();
                 sgel.Action = context.RouteData.Values["action"].ToString();
+                //sgel.ErrorMsg = context.Exception.StackTrace.ToString();
                 sgel.ErrorMsg = context.Exception.Message;
-                dbc.system_globalexception_log.Add(sgel);
-                dbc.SaveChangesAsync();
+                _dbContext.system_globalexception_log.Add(sgel);
+                _dbContext.SaveChanges();
             }
             context.ExceptionHandled = true;
         }

@@ -12,6 +12,7 @@ using MySql.Data.MySqlClient;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NodaTime;
+using NPOI.SS.Formula.Functions;
 using NPOI.SS.UserModel;
 using System;
 using System.Collections.Generic;
@@ -29,15 +30,12 @@ namespace Fisk.MDM.Business
     {
         //private readonly ILogger<MasterDataManage> _logger;
         private readonly MDMDBContext _dbContext;
-        private readonly SessionHelper helper;
         private IHttpClientFactory _httpClientFactory; //注入HttpClient工厂类
 
-        public MasterDataManage(MDMDBContext dbContext, /*ILogger<MasterDataManage> logger,*/ IHttpContextAccessor httpContextAccessor, IHttpClientFactory httpClientFactory)
+        public MasterDataManage(MDMDBContext dbContext, IHttpClientFactory httpClientFactory)
         {
             this._dbContext = dbContext;
             //this._logger = logger;
-            helper = new SessionHelper(httpContextAccessor);
-            new CookieHelper(httpContextAccessor);
             _httpClientFactory = httpClientFactory;
         }
 
@@ -181,7 +179,7 @@ namespace Fisk.MDM.Business
             data.Remark = model.Remark;
             data.LogRetentionDays = model.LogRetentionDays;
             data.UpdateTime = Microsoft.VisualBasic.DateAndTime.Now;
-            data.Updater = "66";
+            data.Updater = CurrentUser.UserAccount;
 
             try
             {
@@ -216,10 +214,18 @@ namespace Fisk.MDM.Business
             try
             {
                 system_model data = _dbContext.system_model.Find(model.Id);
-                _dbContext.Remove(data);
+                var delModel = _dbContext.Remove(data);
                 var flag = this._dbContext.SaveChanges();
                 if (flag != 0)
                 {
+                    var Enames = this._dbContext.system_entity.AsNoTracking().Where(it => it.ModelId == delModel.Entity.Id).ToList();
+                    Enames.ForEach(e =>
+                    {
+                        system_drop_table_entity(e);
+                    });
+                    MySqlParameter sqlParameter = new MySqlParameter("@ModelID",MySqlDbType.VarChar);
+                    sqlParameter.Value = delModel.Entity.Id;
+                    this._dbContext.Database.ExecuteSqlRaw($"delete from system_entity where ModelID =@ModelID",sqlParameter);
                     result.success = true;
                     result.message = "删除成功！";
 
@@ -259,6 +265,7 @@ namespace Fisk.MDM.Business
                 //调用导入数据存储过程
                 var entity = this._dbContext.system_entity.AsNoTracking().Where(it => it.Id == attribute.EntityID.Value).FirstOrDefault();
                 CreateEntityDataImportProc(entity);
+                AttributeRuleRelease(entity.ModelId.Value, entity.Id);
             }
             catch (Exception ex)
             {
@@ -292,6 +299,7 @@ namespace Fisk.MDM.Business
                 //调用创建数据导入存储过程
                 var entity = this._dbContext.system_entity.AsNoTracking().Where(it => it.Id == attribute.EntityID.Value).FirstOrDefault();
                 CreateEntityDataImportProc(entity);
+                AttributeRuleRelease(entity.ModelId.Value, entity.Id);
             }
             catch (Exception ex)
             {
@@ -398,6 +406,11 @@ namespace Fisk.MDM.Business
             try
             {
                 var ExistData = this._dbContext.system_attribute.Where(it => it.Id == attribute.Id).FirstOrDefault();
+                var entity = this._dbContext.system_entity.AsNoTracking().Where(it => it.Id == ExistData.EntityID).FirstOrDefault();
+                if (ExistData.TypeLength != attribute.TypeLength)
+                {
+                    this._dbContext.Database.ExecuteSqlRaw($"ALTER TABLE {entity.EntityTable} MODIFY {attribute.Name} varchar({attribute.TypeLength}) ");//修改mdm表字段长度
+                }
                 this._dbContext.Entry(ExistData).State = EntityState.Modified;
                 ExistData.DisplayName = attribute.DisplayName;
                 ExistData.Remark = attribute.Remark;
@@ -420,8 +433,8 @@ namespace Fisk.MDM.Business
                 if (rows >= 0)
                 {
                     CreateEntityValiditeProc(ExistData.EntityID.Value);
-                    var entity = this._dbContext.system_entity.AsNoTracking().Where(it => it.Id == ExistData.EntityID).FirstOrDefault();
                     CreateEntityDataImportProc(entity);
+                    AttributeRuleRelease(entity.ModelId.Value, entity.Id);
                     result.message = "更新成功";
                     result.success = true;
                     result.data = "";
@@ -612,7 +625,6 @@ namespace Fisk.MDM.Business
                 var list = _dbContext.system_entity.Where(x => x.Id == model.Id).FirstOrDefault();
                 var delEntity = _dbContext.system_entity.Remove(list);
                 var flag = _dbContext.SaveChanges();
-
                 if (flag != 0)
                 {
                     system_drop_table_entity(delEntity.Entity);
@@ -661,7 +673,7 @@ namespace Fisk.MDM.Business
                     {
                         attributes += $" {item.Name} ,";
                         stgAttributes += $" S.{item.Name} ,";
-                        if (item.Name != "Code")
+                        if (item.Name != "Code" && item.Name != "CreateTime" && item.Name != "CreateUser")
                         {
                             updateSql += $@" {_Entity.EntityTable}.{item.Name} =(CASE WHEN S.{item.Name} IS NULL OR S.{item.Name} = '' THEN {_Entity.EntityTable}.{item.Name}  WHEN S.{item.Name} = '~' THEN NULL  ELSE S.{item.Name} END)  ,";
                         }
@@ -682,8 +694,6 @@ namespace Fisk.MDM.Business
                     builder.Append("SELECT  " + stgAttributes + " FROM " + _Entity.StageTable + " AS S");
                     builder.Append(" LEFT JOIN  " + _Entity.EntityTable + $" ON S.Code = {_Entity.EntityTable}.Code ");
                     builder.Append($" WHERE S.batch_id = batchid  AND   S.BissnessRuleStatus='1' AND S.ValidateStatus='1' AND S.WorkFlowStatus = '0'  AND " + _Entity.EntityTable + ".Code IS NULL ;   ");  // 目标表不存在则添加
-
-
                     builder.Append(" END");
                     this._dbContext.Database.ExecuteSqlRaw(builder.ToString());
                     builder.Clear();
@@ -714,55 +724,153 @@ namespace Fisk.MDM.Business
                     this._dbContext.Database.ExecuteSqlRaw(dropSql);//判断该存储过程是否存在,若存在则删除
                     builder.Append("CREATE PROCEDURE " + entity.ValiditeProc + "(in batchid varchar(50)) ");
                     builder.Append("begin ");
-                    builder.Append($"update {entity.StageTable} set ValidateErrorDesc=null where batch_id=batchid;");
+                    builder.Append($" DROP TABLE if EXISTS Temp_{entity.StageTable};");
+                    //创建批次数据临时表
+                    builder.Append(@$"  CREATE TEMPORARY TABLE Temp_{entity.StageTable}(
+                                       select * from {entity.StageTable} where batch_id=batchid
+                                       );");
+                    //创建中间临时表
+                    builder.Append(@$"  CREATE TEMPORARY TABLE Middle_Temp_{entity.StageTable}(
+                                       select * from Temp_{entity.StageTable}
+                                       );");
+                    builder.Append($" delete from {entity.StageTable} where batch_id=batchid;");
+                    builder.Append($" update Temp_{entity.StageTable} set ValidateErrorDesc=null;");
                     //同一批batchid中code重复数据
-                    builder.Append($" update {entity.StageTable} S, (select code  ,batch_id  from {entity.StageTable} GROUP BY code HAVING count(1) > 1 and batch_id=batchid ) AS M  SET S.ValidateErrorDesc=CONCAT('Code重复,', IFNULL(ValidateErrorDesc,'') ),ValidateStatus='2' WHERE M.code = S.code  and S.batch_id=batchid ;");
-                    builder.Append($" update {entity.StageTable} S, (select code  ,batch_id  from {entity.StageTable} GROUP BY code HAVING count(1) = 1 and batch_id=batchid ) AS M  SET S.ValidateStatus='1' WHERE M.code = S.code  and S.batch_id=batchid and isnull(ValidateErrorDesc);");
+                    builder.Append($" update Temp_{entity.StageTable} S, (select code  ,batch_id  from Middle_Temp_{entity.StageTable} GROUP BY code HAVING count(1) > 1 and code is not null ) AS M  SET S.ValidateErrorDesc=CONCAT('Code重复,', IFNULL(ValidateErrorDesc,'') ),ValidateStatus='2' WHERE M.code = S.code  AND S.batch_id = batchid;");
+                    builder.Append($" update Temp_{entity.StageTable} S, (select code  ,batch_id  from Middle_Temp_{entity.StageTable} GROUP BY code HAVING count(1) = 1 and code is not null ) AS M  SET S.ValidateStatus='1' WHERE M.code = S.code AND S.batch_id = batchid  and isnull(ValidateErrorDesc);");
                     foreach (var item in attrDetails)
                     {
                         switch (item.DataType)
                         {
                             case "文本":
                                 //文本长度验证
-                                builder.Append($" update {entity.StageTable} set {item.Name}=null where  {item.Name}=''  and batch_id=batchid ;");
-                                builder.Append($" update {entity.StageTable} set ValidateErrorDesc= CONCAT('{item.DisplayName ?? item.Name}字段数据长度超出,',IFNULL(ValidateErrorDesc,'') ),ValidateStatus='2' where  LENGTH({item.Name})>{item.TypeLength}  and batch_id=batchid ;");
-                                builder.Append($" update {entity.StageTable} set ValidateStatus='1' where  LENGTH({item.Name})<={item.TypeLength}  and batch_id=batchid  and isnull(ValidateErrorDesc);");
+                                builder.Append($" update Temp_{entity.StageTable} set {item.Name}=null where  {item.Name}='' ;");
+                                //builder.Append($" update Temp_{entity.StageTable} set ValidateErrorDesc= case  ");
+                                //builder.Append($" when  LENGTH({item.Name})>{item.TypeLength} then CONCAT('{item.DisplayName ?? item.Name}字段数据长度超出,',IFNULL(ValidateErrorDesc,'')) ");
+                                //builder.Append($" when  LENGTH({item.Name})<={item.TypeLength} then null");
+                                //builder.Append($" when  {item.Name} is null then null");
+                                //builder.Append(" END ,");
+                                //builder.Append($" ValidateStatus= case  ");
+                                //builder.Append($" when  LENGTH({item.Name})>{item.TypeLength} then '2' ");
+                                //builder.Append($" when  LENGTH({item.Name})<={item.TypeLength} then '1' ");
+                                //builder.Append($" when  {item.Name} is null then '0'");
+                                //builder.Append(" END ");
+                                //builder.Append(" where batch_id=batchid;");
+                                builder.Append($" update Temp_{entity.StageTable} set ValidateErrorDesc=CONCAT('{item.DisplayName ?? item.Name}字段数据长度超出,',IFNULL(ValidateErrorDesc,'')) ,ValidateStatus='2' where  LENGTH({item.Name})>{item.TypeLength} ;");
+                                builder.Append($" update Temp_{entity.StageTable} set ValidateStatus='1' where  LENGTH({item.Name})<={item.TypeLength} and isnull(ValidateErrorDesc);");
                                 break;
                             case "数字":
                                 //数据类型验证
-                                builder.Append($" update {entity.StageTable} set {item.Name}=null where  {item.Name}=''  and batch_id=batchid ;");
-                                builder.Append($" update {entity.StageTable} set ValidateErrorDesc= CONCAT('{item.DisplayName ?? item.Name}字段数据类型应为数字,', IFNULL(ValidateErrorDesc,'')),ValidateStatus='2' where  {item.Name} REGEXP '[^0-9.]' and batch_id=batchid ;");
-                                builder.Append($" update {entity.StageTable} set ValidateStatus='1' where  {item.Name} NOT REGEXP '[^0-9.]' and batch_id=batchid and isnull(ValidateErrorDesc); ");
+                                builder.Append($" update Temp_{entity.StageTable} set {item.Name}=null where  {item.Name}='' ;");
+                                //builder.Append($" update Temp_{entity.StageTable} set ValidateErrorDesc= case  ");
+                                //builder.Append($" when {item.Name} REGEXP '[^0-9.]' then CONCAT('{item.DisplayName ?? item.Name}字段数据类型应为数字,', IFNULL(ValidateErrorDesc,'')) ");
+                                //builder.Append($" when {item.Name} NOT REGEXP '[^0-9.]' then null");
+                                //builder.Append($" when {item.Name}  is null  then null");
+                                //builder.Append(" END ,");
+                                //builder.Append($" ValidateStatus= case  ");
+                                //builder.Append($" when {item.Name} REGEXP '[^0-9.]' then '2' ");
+                                //builder.Append($" when {item.Name} NOT REGEXP '[^0-9.]' then '1'");
+                                //builder.Append($" when {item.Name} is null  then '0'");
+                                //builder.Append(" END ");
+                                //builder.Append(" where batch_id=batchid;");
+                                builder.Append($" update Temp_{entity.StageTable} set ValidateErrorDesc= CONCAT('{item.DisplayName ?? item.Name}字段数据类型应为数字,', IFNULL(ValidateErrorDesc,'')),ValidateStatus='2' where  {item.Name} REGEXP '[^0-9.]' ;");
+                                builder.Append($" update Temp_{entity.StageTable} set ValidateStatus='1' where  {item.Name} NOT REGEXP '[^0-9.]'  and isnull(ValidateErrorDesc); ");
                                 break;
                             case "小数":
                                 //数据类型验证
-                                builder.Append($" update {entity.StageTable} SET {item.Name}=null where {item.Name}='' and batch_id=batchid ;");
-                                builder.Append($@" update {entity.StageTable}  set ValidateErrorDesc= CONCAT('{item.DisplayName ?? item.Name}字段数据类型应为小数,', IFNULL(ValidateErrorDesc,'')),ValidateStatus='2' where  {item.Name} REGEXP ");
+                                builder.Append($" update Temp_{entity.StageTable} SET {item.Name}=null where {item.Name}='' ;");
+                                //builder.Append($" update Temp_{entity.StageTable} set ValidateErrorDesc= case  ");
+                                //builder.Append($" when {item.Name} REGEXP ");
+                                //builder.Append(@"'[^[1-9](\d{0,9})((\.\d{1,2})?)$]'");
+                                //builder.Append($" or {item.Name} like '%.' ");
+                                //builder.Append($" then CONCAT('{item.DisplayName ?? item.Name}字段数据类型应为小数,', IFNULL(ValidateErrorDesc,''))");
+                                //builder.Append($" when {item.Name} NOT REGEXP ");
+                                //builder.Append(@"'[^[1-9](\d{0,9})((\.\d{1,2})?)$]'");
+                                //builder.Append($" or {item.Name} like '%.' ");
+                                //builder.Append(" then null ");
+                                //builder.Append($" when {item.Name}  is null  then null ");
+                                //builder.Append(" END ,");
+                                //builder.Append($" ValidateStatus= case  ");
+                                //builder.Append($" when {item.Name} REGEXP ");
+                                //builder.Append(@"'[^[1-9](\d{0,9})((\.\d{1,2})?)$]'");
+                                //builder.Append($" or {item.Name} like '%.' ");
+                                //builder.Append($" then '2' ");
+                                //builder.Append($" when {item.Name} NOT REGEXP ");
+                                //builder.Append(@"'[^[1-9](\d{0,9})((\.\d{1,2})?)$]'");
+                                //builder.Append($" or {item.Name} like '%.' ");
+                                //builder.Append(" then '1'");
+                                //builder.Append($" when {item.Name} is null  then '0'");
+                                //builder.Append(" END");
+                                //builder.Append(" where batch_id=batchid;");
+                                builder.Append($@" update Temp_{entity.StageTable}  set ValidateErrorDesc= CONCAT('{item.DisplayName ?? item.Name}字段数据类型应为小数,', IFNULL(ValidateErrorDesc,'')),ValidateStatus='2' where  {item.Name} REGEXP ");
                                 builder.Append(@"'[^[1-9](\d{0,9})((\.\d{1,2})?)$]'");
-                                builder.Append($" or {item.Name} like '%.' and batch_id=batchid ;");
-                                builder.Append($@" update {entity.StageTable} set ValidateStatus='1' where  {item.Name} NOT REGEXP ");
+                                builder.Append($" or {item.Name} like '%.'  ;");
+                                builder.Append($@" update Temp_{entity.StageTable} set ValidateStatus='1' where  {item.Name} NOT REGEXP ");
                                 builder.Append(@"'[^[1-9](\d{0,9})((\.\d{1,2})?)$]'");
-                                builder.Append($" and {item.Name}  not like '%.'  and batch_id=batchid and isnull(ValidateErrorDesc); ");
+                                builder.Append($" and {item.Name}  not like '%.' and isnull(ValidateErrorDesc); ");
                                 break;
                             case "时间":
-                                builder.Append($" update {entity.StageTable} SET {item.Name}=null where {item.Name}='' and batch_id=batchid ;");
-                                builder.Append($" update {entity.StageTable}  set ValidateErrorDesc= CONCAT('{item.DisplayName ?? item.Name}字段格式应为年-月-日 时:分:秒,', IFNULL(ValidateErrorDesc,'')),ValidateStatus='2' where  {item.Name} not REGEXP  ");
-                                builder.Append(@"'[^(\d{4}|\d{2})(\-|\/|\.)\d{1,2}\3\d{1,2}$)|(^\d{4}\d{1,2}\d{1,2}$)]' and batch_id=batchid");
+                                builder.Append($" update Temp_{entity.StageTable} SET {item.Name}=null where {item.Name}='' ;");
+                                //builder.Append($" update {entity.StageTable} set ValidateErrorDesc= case  ");
+                                //builder.Append($" when {item.Name} not REGEXP ");
+                                //builder.Append(@"'[^(\d{4}|\d{2})(\-|\/|\.)\d{1,2}\3\d{1,2}$)|(^\d{4}\d{1,2}\d{1,2}$)]'");
+                                //builder.Append($"   and {item.Name} is not null ");
+                                //builder.Append($" then CONCAT('{item.DisplayName ?? item.Name}字段格式应为年-月-日 时:分:秒,', IFNULL(ValidateErrorDesc,''))");
+                                //builder.Append($" when {item.Name}  REGEXP ");
+                                //builder.Append(@"'[^(\d{4}|\d{2})(\-|\/|\.)\d{1,2}\3\d{1,2}$)|(^\d{4}\d{1,2}\d{1,2}$)]' and isnull(ValidateErrorDesc) ");
+                                //builder.Append(" then null ");
+                                //builder.Append($" when {item.Name}  is null  then null");
+                                //builder.Append(" END ,");
+                                //builder.Append($" ValidateStatus= case ");
+                                //builder.Append($" when {item.Name} not REGEXP ");
+                                //builder.Append(@"'[^(\d{4}|\d{2})(\-|\/|\.)\d{1,2}\3\d{1,2}$)|(^\d{4}\d{1,2}\d{1,2}$)]'");
+                                //builder.Append($"   and {item.Name} is not null ");
+                                //builder.Append($" then '2' ");
+                                //builder.Append($" when {item.Name}  REGEXP ");
+                                //builder.Append(@"'[^(\d{4}|\d{2})(\-|\/|\.)\d{1,2}\3\d{1,2}$)|(^\d{4}\d{1,2}\d{1,2}$)]' and isnull(ValidateErrorDesc) ");
+                                //builder.Append(" then '1' ");
+                                //builder.Append($" when {item.Name} is null  then '0'");
+                                //builder.Append(" END ");
+                                //builder.Append(" where batch_id=batchid;");
+
+                                builder.Append($" update Temp_{entity.StageTable}  set ValidateErrorDesc= CONCAT('{item.DisplayName ?? item.Name}字段格式应为年-月-日 时:分:秒,', IFNULL(ValidateErrorDesc,'')),ValidateStatus='2' where  {item.Name} not REGEXP  ");
+                                builder.Append(@"'[^(\d{4}|\d{2})(\-|\/|\.)\d{1,2}\3\d{1,2}$)|(^\d{4}\d{1,2}\d{1,2}$)]'");
                                 builder.Append($"   and {item.Name} is not null;");
-                                builder.Append($" update {entity.StageTable}  set ValidateStatus='1' where  {item.Name} REGEXP  ");
-                                builder.Append(@"'[^(\d{4}|\d{2})(\-|\/|\.)\d{1,2}\3\d{1,2}$)|(^\d{4}\d{1,2}\d{1,2}$)]' and batch_id=batchid and isnull(ValidateErrorDesc);");
+                                builder.Append($" update Temp_{entity.StageTable}  set ValidateStatus='1' where  {item.Name} REGEXP  ");
+                                builder.Append(@"'[^(\d{4}|\d{2})(\-|\/|\.)\d{1,2}\3\d{1,2}$)|(^\d{4}\d{1,2}\d{1,2}$)]' and isnull(ValidateErrorDesc);");
                                 break;
                             case "":
                                 //基于域的验证
-                                builder.Append($" update {entity.StageTable} set {item.Name}=null where  {item.Name}=''  and batch_id=batchid ;");
+                                builder.Append($" update Temp_{entity.StageTable} set {item.Name}=null where  {item.Name}='' ;");
                                 var linkEntityTable = this._dbContext.system_entity.AsNoTracking().Where(it => it.Id == item.LinkEntityID).FirstOrDefault().EntityTable;
-                                builder.Append($" update {entity.StageTable} set ValidateErrorDesc= CONCAT('{item.DisplayName ?? item.Name}字段基于域错误,', IFNULL(ValidateErrorDesc,'')),ValidateStatus='2' where {item.Name} not in (select Code from {linkEntityTable}) and batch_id=batchid and {item.Name} is not null;");
-                                builder.Append($" update {entity.StageTable} set ValidateStatus='1' where {item.Name} in (select Code from {linkEntityTable}) and batch_id=batchid and isnull(ValidateErrorDesc);");
+                                //builder.Append($" update {entity.StageTable} set ValidateErrorDesc= case  ");
+                                //builder.Append($" when {item.Name} not in (select Code from {linkEntityTable}) and {item.Name} is not null ");
+                                //builder.Append($" then CONCAT('{item.DisplayName ?? item.Name}字段基于域错误,', IFNULL(ValidateErrorDesc,''))");
+                                //builder.Append($" when {item.Name} in (select Code from {linkEntityTable})  and isnull(ValidateErrorDesc) ");
+                                //builder.Append($" then null ");
+                                //builder.Append($" when {item.Name}  is null  then null");
+                                //builder.Append(" END, ");
+                                //builder.Append($" ValidateStatus= case  ");
+                                //builder.Append($" when {item.Name} not in (select Code from {linkEntityTable}) and {item.Name} is not null ");
+                                //builder.Append($" then '2' ");
+                                //builder.Append($" when {item.Name} in (select Code from {linkEntityTable})  and isnull(ValidateErrorDesc) ");
+                                //builder.Append($" then '1'");
+                                //builder.Append($" when {item.Name} is null  then '0'");
+                                //builder.Append(" END ");
+                                //builder.Append(" where batch_id=batchid;");
+
+
+                                builder.Append($" update Temp_{entity.StageTable} set ValidateErrorDesc= CONCAT('{item.DisplayName ?? item.Name}字段基于域错误,', IFNULL(ValidateErrorDesc,'')),ValidateStatus='2' where {item.Name} not in (select Code from {linkEntityTable}) and {item.Name} is not null;");
+                                builder.Append($" update Temp_{entity.StageTable} set ValidateStatus='1' where {item.Name} in (select Code from {linkEntityTable})  and isnull(ValidateErrorDesc) or ISNULL({item.Name});");
                                 break;
                             case "文件":
                                 break;
                         }
                     }
+                    builder.Append($" insert into {entity.StageTable} select * from Temp_{entity.StageTable};");
+
+                    builder.Append($" drop table Temp_{entity.StageTable};");
+                    builder.Append($" drop table Middle_Temp_{entity.StageTable};");
                     builder.Append("end");
                     builder.Replace("{", "{{").Replace("}", "}}");
                     this._dbContext.Database.ExecuteSqlRaw(builder.ToString());
@@ -789,6 +897,7 @@ namespace Fisk.MDM.Business
                     this._dbContext.RemoveRange(query.ToList());
                     this._dbContext.SaveChanges();
                 }
+
                 StringBuilder builder = new StringBuilder();
                 builder.Append("drop table " + system_Entity.EntityTable);
                 this._dbContext.Database.ExecuteSqlRaw(builder.ToString());
@@ -922,7 +1031,7 @@ namespace Fisk.MDM.Business
                             _Attribute.DisplayName = "有效性";
                             _Attribute.DataType = "数字";
                             _Attribute.TypeLength = 0;
-                            _Attribute.IsSystem = 1;
+                            _Attribute.IsSystem = 0;
                         }
                         else
                         {
@@ -955,6 +1064,8 @@ namespace Fisk.MDM.Business
                         CreateEntityValiditeProc(system_Entity.Id);
                         //业务规则生成
                         AttributeRuleRelease(system_Entity.ModelId.Value, system_Entity.Id);
+                        //创建触发器
+                        //system_create_table_trigger(system_Entity);
                     }
                 }
             }
@@ -970,25 +1081,81 @@ namespace Fisk.MDM.Business
         /// <param name="system_Entity"></param>
         public void system_create_table_trigger(system_entity system_Entity)
         {
-            try
+            using (var tran = this._dbContext.Database.BeginTransaction())
             {
-                StringBuilder builder = new StringBuilder();
-                builder.Append($" CREATE TRIGGER trig_{system_Entity.Name} BEFORE INSERT");
-                builder.Append($" ON {system_Entity.EntityTable} FOR EACH ROW");
-                builder.Append($" BEGIN ");
-                builder.Append("  DECLARE seed int;");
-                builder.Append("  DECLARE maxiD int;");
-                builder.Append($" SELECT AUTO_INCREMENT into seed  FROM  INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'mdmdb' AND TABLE_NAME   = '{system_Entity.EntityTable}';");
-                builder.Append($" SELECT IFNULL(max(id),0) into maxiD from {system_Entity.EntityTable};");
-                builder.Append("  SET NEW.code = (maxiD+seed);");
-                builder.Append("  END	");
-                this._dbContext.Database.ExecuteSqlRaw(builder.ToString());
-                builder.Clear();
+                try
+                {
+                    StringBuilder builder = new StringBuilder();
+                    builder.Append($" DROP TRIGGER IF EXISTS trig_{system_Entity.Name}");
+                    this._dbContext.Database.ExecuteSqlRaw(builder.ToString());
+                    builder.Clear();
+                    builder.Append($" CREATE TRIGGER trig_{system_Entity.Name} BEFORE INSERT");
+                    builder.Append($" ON {system_Entity.StageTable} FOR EACH ROW");
+                    builder.Append($" BEGIN ");
+                    builder.Append("  DECLARE PrefixCode varchar(50);");//定义含前缀Code
+                    builder.Append("  DECLARE MdmAllCount int;");//定义Mdm表总数
+                    builder.Append("  DECLARE StgAllCount int;");//定义stage表总数
+                    builder.Append("  DECLARE MdmOrStg int;");//决定取mdm还是stage的最大code
+                    builder.Append("  DECLARE MiddleCode varchar(50);");//中间变量
+                    builder.Append("  DECLARE Prefix varchar(50);");//定义code前缀
+                    builder.Append("  DECLARE Postfix varchar(50);");//定义Code前缀后的编码
+                    builder.Append($" SELECT count(*) into MdmAllCount  from {system_Entity.EntityTable}; ");//先查mdm表是否有数据
+                    builder.Append($" SELECT count(*) into StgAllCount  from {system_Entity.StageTable}; ");//先查stage表是否有数据
+                    builder.Append("  if MdmAllCount <> 0 THEN ");//如果mdm表中有数据
+                    builder.Append($"    SELECT max(Code+0) into PrefixCode from {system_Entity.EntityTable};");//取mdm最大code值
+                    builder.Append($"    SELECT Count(*) into MdmOrStg from {system_Entity.StageTable} where Code=PrefixCode and ValidateStatus != 2 and BissnessRuleStatus !=2;");//决定取mdm还是取stage表
+                    builder.Append($"    if MdmOrStg > 0 THEN");//如果mdm表中的最大值在stage表中存在,则取stage表中的最大code作为自增初始值
+                    builder.Append($"        SELECT max(Code+0) into PrefixCode from {system_Entity.StageTable} where ValidateStatus != 2 and BissnessRuleStatus !=2;");
+                    builder.Append("         if ISNULL(NEW.Code) THEN ");//如果新增的时候code没有值
+                    builder.Append("            SET NEW.code = (PrefixCode+0+1);");//给当前Code加一
+                    builder.Append("         ELSE ");//插入时有值
+                    builder.Append("            SET NEW.code = NEW.Code;");//用当前值赋值给Code
+                    builder.Append("         end if;");
+                    builder.Append("     ELSE ");//如果mdm表中的最大值在stage表中不存在,则取mdm表中的最大code作为自增初始值
+                    builder.Append($"        SELECT IFNULL(max(Code+0),0)  into MiddleCode from {system_Entity.StageTable} where ValidateStatus != 2 and BissnessRuleStatus !=2;");
+                    builder.Append($"        if PrefixCode > (MiddleCode+0) THEN ");
+                    builder.Append("            if ISNULL(NEW.Code) THEN ");//如果新增的时候code没有值
+                    builder.Append("               SET NEW.code = (PrefixCode+0+1);");//给当前Code加一
+                    builder.Append("            ELSE ");//插入时有值
+                    builder.Append("               SET NEW.code = NEW.Code;");//用当前值赋值给Code
+                    builder.Append("            end if;");
+                    builder.Append("         ELSE ");
+                    builder.Append("             if ISNULL(NEW.Code) THEN ");//如果新增的时候code没有值
+                    builder.Append("                SET NEW.code = (MiddleCode+0+1);");//给当前Code加一
+                    builder.Append("             ELSE ");//插入时有值
+                    builder.Append("                SET NEW.code = NEW.Code;");//用当前值赋值给Code
+                    builder.Append("             end if;");
+                    builder.Append("        end if;");
+                    builder.Append("     end if;");
+                    builder.Append("  ELSE ");//如果mdm表中没有数据
+                    builder.Append("    if StgAllCount <> 0 THEN ");//如果stage表中有值
+                                                                    //取stage表中通过验证的最大code(包括ValidateStatus和BissnessRuleStatus为0的)
+                    builder.Append($"      SELECT max(Code+0) into PrefixCode from {system_Entity.StageTable} where ValidateStatus != 2 and BissnessRuleStatus !=2; ");
+                    builder.Append("       if ISNULL(NEW.Code) THEN ");//如果新增的时候code没有值
+                    builder.Append("          SET NEW.Code = (PrefixCode+0+1);");//给当前Code加一
+                    builder.Append("       ELSE ");//插入时有值
+                    builder.Append("          SET NEW.Code = NEW.Code;");//用当前值赋值给Code
+                    builder.Append("       end if;");
+                    builder.Append("   ELSE ");//如果stage表中没有数据
+                    builder.Append("       SET PrefixCode=0;");
+                    builder.Append("       if ISNULL(NEW.Code) THEN ");//如果新增时code为空
+                    builder.Append("          SET NEW.Code=(PrefixCode+0+1);");//code从1开始
+                    builder.Append("       ELSE ");//新增时Code不为空
+                    builder.Append("          SET NEW.Code = NEW.Code;");
+                    builder.Append("       end if;");
+                    builder.Append("   end if;");
+                    builder.Append("  end if;");
+                    builder.Append("  END	");
+                    this._dbContext.Database.ExecuteSqlRaw(builder.ToString());
+                    builder.Clear();
+                    tran.Commit();
+                }
+                catch (Exception)
+                {
+                    tran.Rollback();
+                }
             }
-            catch (Exception)
-            {
-                throw;
-            }
+
         }
         /// <summary>
         /// 发布验证业务规则存储过程  2020年4月26   wyt
@@ -1023,19 +1190,30 @@ namespace Fisk.MDM.Business
                         foreach (var item in ruleData)
                         {
                             string tempSql = "";
-                            var attributeConfig = _dbContext.system_attribute.Where(e => e.Id == item.AttributeID).FirstOrDefault();
+                            var attributeConfig = _dbContext.system_attribute.Where(e => e.Id == item.AttributeID).Select(it => new { it.Name, it.DisplayName }).FirstOrDefault();
                             if (attributeConfig != null)
                             {
-                                tempSql += $@" UPDATE {entityData.StageTable} SET BissnessRuleErrorDesc = CONCAT( IFNULL(BissnessRuleErrorDesc,''), '{attributeConfig.DisplayName ?? attributeConfig.Name}错误  ' ) ,
+                                if (attributeConfig.Name.ToLower() == "code")
+                                {
+                                    if (item.Type == "自定义验证规则" && string.IsNullOrEmpty(item.Expression))
+                                    {
+                                        tempSql += $" select batch_id into batchid  from {entityData.StageTable} order by CreateTime desc  LIMIT 1;";
+                                        tempSql += $" call SP_MDM_Update_StoreCode(batchid); ";
+                                    }
+                                }
+                                else
+                                {
+                                    tempSql += $@" UPDATE {entityData.StageTable} SET BissnessRuleErrorDesc = CONCAT( IFNULL(BissnessRuleErrorDesc,''), '{attributeConfig.DisplayName ?? attributeConfig.Name}错误  ' ) ,
 	                           BissnessRuleStatus = '2' 
                                WHERE batch_id = batchid AND {attributeConfig.Name} NOT REGEXP '{item.Expression}' AND 
                                IFNULL(BissnessRuleErrorDesc,'') NOT LIKE '%{attributeConfig.DisplayName ?? attributeConfig.Name}错误%';  "; //正则验证 update语句
-                                if (item.Required == "true")
-                                {
-                                    tempSql += $@" UPDATE {entityData.StageTable} SET BissnessRuleErrorDesc = CONCAT(IFNULL(BissnessRuleErrorDesc,'') , '{attributeConfig.DisplayName ?? attributeConfig.Name}必填项为空  ' ) ,
+                                    if (item.Required == "true")
+                                    {
+                                        tempSql += $@" UPDATE {entityData.StageTable} SET BissnessRuleErrorDesc = CONCAT(IFNULL(BissnessRuleErrorDesc,'') , '{attributeConfig.DisplayName ?? attributeConfig.Name}必填项为空  ' ) ,
 	                           BissnessRuleStatus = '2' 
                                WHERE batch_id = batchid AND ( {attributeConfig.Name} IS NULL OR {attributeConfig.Name} = '' ) AND 
                                BissnessRuleErrorDesc NOT LIKE '%{attributeConfig.DisplayName ?? attributeConfig.Name}必填项为空%';  ";    //判断是否为必填
+                                    }
                                 }
                             }
                             columnRule += tempSql;
@@ -1205,19 +1383,25 @@ namespace Fisk.MDM.Business
                 if (model.Id != null && model.Id != 0)
                 {
                     system_entity FindEntity = _dbContext.system_entity.FirstOrDefault(x => x.Id == model.Id);
+                    if (model.AutoCreateCode == 1 && FindEntity.AutoCreateCode == 0)
+                    {
+                        this._dbContext.Database.ExecuteSqlRaw($" DROP TRIGGER IF EXISTS trig_{FindEntity.Name}");//删除对应表的触发器
+                    }
+                    if (model.AutoCreateCode == 0 && FindEntity.AutoCreateCode == 1)
+                    {
+                        system_create_table_trigger(FindEntity);
+                    }
                     FindEntity.Name = model.Name;
                     FindEntity.Remark = model.Remark;
                     FindEntity.BeganIn = model.BeganIn;
                     FindEntity.AutoCreateCode = model.AutoCreateCode;
-                    FindEntity.StageTable = model.StageTable;
+                    FindEntity.StageTable = model.StageTable.ToLower();
                     FindEntity.UpdateTime = DateTime.Now;
                     FindEntity.Updater = CurrentUser.UserAccount;
                     //FindEntity.ModelId = model.ModelId;
                     int ChangeLimit = _dbContext.SaveChanges();
                     if (ChangeLimit > 0)
                     {
-                        //system_drop_table_entity(FindEntity);
-                        //system_create_table_entity(FindEntity);
                         result.message = "更新成功";
                         result.success = true;
                     }
@@ -1322,6 +1506,7 @@ namespace Fisk.MDM.Business
                         sqlvalue.Append("\"" + item.Value + "\"" + ",");
                     }
                     string execSqlStr = DelLastComma(sqlstr.ToString()) + ")" + DelLastComma(sqlvalue.ToString()) + ")";
+
                     this._dbContext.Database.ExecuteSqlRaw(execSqlStr);
                 }
                 var para = new DynamicParameters();
@@ -1330,8 +1515,9 @@ namespace Fisk.MDM.Business
                 {
                     if (!NotValidite)
                     {
-                        var validityresult = connection.Query(entitydata.ValiditeProc, para, null, true, null, CommandType.StoredProcedure).FirstOrDefault();
-                        string attributeCheckSql = "select * from " + entitydata.StageTable + " where ValidateStatus=2 and batch_id=\"" + batch_id + "\"";
+                        connection.Execute(entitydata.ValiditeProc, para, null, 18000, CommandType.StoredProcedure);
+                        //var validityresult = connection.ex(entitydata.ValiditeProc, para, null, true, null, CommandType.StoredProcedure).FirstOrDefault();
+                        string attributeCheckSql = $"select * from  {entitydata.StageTable}  where ValidateStatus=2 and batch_id='{batch_id}'";
                         var attributeCheckData = connection.Query(attributeCheckSql);
                         if (attributeCheckData.Count() > 0)
                         {
@@ -1351,8 +1537,9 @@ namespace Fisk.MDM.Business
                             _dbContext.SaveChanges();
                             return result;
                         }
-                        var businessresult = connection.Query(entitydata.BusinessProc, para, null, true, null, CommandType.StoredProcedure).FirstOrDefault();
-                        string businessCheckSql = "select * from " + entitydata.StageTable + " where BissnessRuleStatus=2 and batch_id=\"" + batch_id + "\"";
+                        connection.Execute(entitydata.BusinessProc, para, null, 18000, CommandType.StoredProcedure);
+                        //var businessresult = connection.Query(entitydata.BusinessProc, para, null, true, null, CommandType.StoredProcedure).FirstOrDefault();
+                        string businessCheckSql = $"select * from  {entitydata.StageTable}  where BissnessRuleStatus=2 and batch_id='{batch_id}'";
                         var businessCheckData = connection.Query(businessCheckSql);
                         if (businessCheckData.Count() > 0)
                         {
@@ -1377,15 +1564,16 @@ namespace Fisk.MDM.Business
                     var v_para = new DynamicParameters();
                     v_para.Add("@entityid", entitydata.Id);
                     v_para.Add("@batchid", batch_id);
-                    var visionZipper = connection.Query("Field_Track", v_para, null, true, null, CommandType.StoredProcedure).FirstOrDefault();
+                    connection.Execute("Field_Track", v_para, null, 18000, CommandType.StoredProcedure);
+                    //var visionZipper = connection.Query("Field_Track", v_para, null, true, null, CommandType.StoredProcedure).FirstOrDefault();
                     //数据审批流
                     //工作流处理 
-                    var workflow_check_PROC = connection.Query("WorkFlow_Check", v_para, null, true, null, CommandType.StoredProcedure).FirstOrDefault();
+                    connection.Execute("WorkFlow_Check", v_para, null, 18000, CommandType.StoredProcedure);
+                    //var workflow_check_PROC = connection.Query("WorkFlow_Check", v_para, null, true, null, CommandType.StoredProcedure).FirstOrDefault();
                     string workflowCheckSql = $"SELECT * FROM {entitydata.StageTable}  WHERE WorkFlowstatus=1 AND batch_id='{batch_id}' GROUP BY WorkFlow_ProcessingType";
                     var workflowCheckData = connection.Query(workflowCheckSql);
                     if (workflowCheckData.Count() > 0)
                     {
-                        isWorkFlow = true;
                         //构造请求身份验证token的参数
                         Dictionary<string, string> param = new Dictionary<string, string>();
                         param.Add("name", AppsettingsHelper.GetSection("WorkFlowInfos:WFUser"));
@@ -1401,21 +1589,28 @@ namespace Fisk.MDM.Business
                             var formData = new MultipartFormDataContent();
                             //formData.Add(new StringContent("测试审批流"), "bpmName");
                             //formData.Add(new StringContent("Add_WorkFlow"), "applyTitle");
-                            formData.Add(new StringContent(AppsettingsHelper.GetSection("WorkFlowInfos:WFUser")), "userName");
+                            formData.Add(new StringContent(workflowitem.CreateUser ?? workflowitem.UpdateUser), "userName");
+                            formData.Add(new StringContent(entitydata.Id.ToString()), "tableFlag");
                             //发起审批流程
                             JObject resultpost = (JObject)JsonConvert.DeserializeObject(Client_Post(formData, workflowitem.WorkFlowApi, tokenstr).Result);
                             string instanceID = string.Empty;
                             bool workflow = bool.Parse(((Newtonsoft.Json.Linq.JValue)resultpost["isok"]).Value.ToString());
+                            instanceID = ((Newtonsoft.Json.Linq.JValue)resultpost["entityID"]).Value.ToString();
                             if (workflow)
                             {
-                                instanceID = ((Newtonsoft.Json.Linq.JValue)resultpost["entityID"]).Value.ToString();
-                                string _up_stg_sqlstr = $"update {entitydata.StageTable} set WorkFlow_InstanceID='{instanceID}' where batch_id='{batch_id}' and WorkFlow_ProcessingType='{workflowitem.WorkFlow_ProcessingType}'";
-                                connection.Execute(_up_stg_sqlstr);
+                                isWorkFlow = true;
+                                connection.Execute($"update {entitydata.StageTable} set WorkFlow_InstanceID='{instanceID}' where batch_id='{batch_id}' and WorkFlow_ProcessingType='{workflowitem.WorkFlow_ProcessingType}'");
                             };
+                            if (!workflow && instanceID == "-1")
+                            {
+                                isWorkFlow = false;
+                                connection.Execute($"update {entitydata.StageTable} set WorkFlowstatus=0 where batch_id='{batch_id}' and WorkFlow_ProcessingType='{workflowitem.WorkFlow_ProcessingType}'");
+                            }
                         }
                     }
                     //进行数据的最终导入
-                    var importresult = connection.Query(entitydata.DataImportProc, para, null, true, null, CommandType.StoredProcedure).FirstOrDefault();
+                    //var importresult = connection.Query(entitydata.DataImportProc, para, null, true, null, CommandType.StoredProcedure).FirstOrDefault();
+                    connection.Execute(entitydata.DataImportProc, para, null, 18000, CommandType.StoredProcedure);
                 }
                 system_entitydatchlogs enlog = new system_entitydatchlogs();
                 enlog.EntityID = entitydata.Id;
@@ -1553,19 +1748,58 @@ namespace Fisk.MDM.Business
                 IWorkbook workbook = new NPOI.XSSF.UserModel.XSSFWorkbook();
                 ISheet sheet = workbook.CreateSheet("sheet");
                 IRow Title = sheet.CreateRow(0);
-                var attributeColumn = _dbContext.system_attribute.Where(e => e.EntityID.ToString() == entityid && e.IsSystem == 0).Select(e => new { e.DisplayName, e.Name }).ToList();
+                var attributeColumn = _dbContext.system_attribute.AsNoTracking().Where(e => e.EntityID.ToString() == entityid && e.IsSystem == 0).Select(e => new { e.DisplayName, e.Name }).ToList();
                 for (int i = 0; i < attributeColumn.Count; i++)
                 {
                     Title.CreateCell(i).SetCellValue(attributeColumn[i].DisplayName.ToString() == "" ? attributeColumn[i].Name : attributeColumn[i].DisplayName);
                 }
                 if (type == "Get")
                 {
+                    Dictionary<string, List<dynamic>> ForeignMdmDatas = new Dictionary<string, List<dynamic>>();
+
+                    if (this._dbContext.system_attribute.AsNoTracking().Any(e => e.EntityID.ToString() == entityid && e.IsSystem == 0 && e.Type == "基于域"))
+                    {
+                        var Entity = this._dbContext.system_entity.AsNoTracking().Where(it => it.Id.ToString() == entityid).Select(it => new { it.EntityTable, it.Name }).FirstOrDefault();
+                        DynamicParameters parameters = new DynamicParameters();
+                        parameters.Add("@EntityID", entityid, DbType.Int32);
+                        DataTable mdmTable = new DataTable();
+                        DataTable ForeignAttrsDT = new DataTable();
+                        using (IDbConnection con = DapperContext.Connection())
+                        {
+                            IDataReader ForeignAttrsReader = con.ExecuteReader("select name from system_attribute where EntityID=@EntityID and type='基于域'", parameters);
+                            //获取基于域的属性
+                            ForeignAttrsDT.Load(ForeignAttrsReader);
+                            IDataReader ForeignTablesReader = con.ExecuteReader("select EntityTable  from system_entity where id in (select LinkEntityID from system_attribute where EntityID=@EntityID and Type='基于域')", parameters);
+                            mdmTable.Load(ForeignTablesReader);
+                            List<dynamic> ForeignData = null;
+                            List<dynamic> ForeignData2 = con.Query(@$"select DISTINCT `Code`, `Name` from {Entity.EntityTable}").AsQueryable().AsNoTracking().ToList();
+                            DataRow rowValue = null;
+                            int i = 0;
+                            foreach (DataRow item in mdmTable.Rows)
+                            {
+                                rowValue = ForeignAttrsDT.Rows[i];
+                                if (item["EntityTable"].ToString() != Entity.EntityTable)
+                                {
+                                    ForeignData = con.Query(@$"select DISTINCT  b.`Code`, b.`Name` from {Entity.EntityTable}
+                                                        left join {item["EntityTable"].ToString()} b
+                                                        on {rowValue["name"].ToString()} = b.code").AsQueryable().AsNoTracking().ToList();
+                                }
+                                else
+                                {
+                                    ForeignData = ForeignData2;
+                                }
+                                ForeignMdmDatas.Add(rowValue["name"].ToString(), ForeignData);
+                                i++;
+                            }
+                        }
+                    }
                     var EntityTable = this._dbContext.system_entity.AsNoTracking().Where(it => it.Id.ToString() == entityid).Select(it => it.EntityTable).FirstOrDefault();
                     StringBuilder builder = new StringBuilder();
                     foreach (var item in attributeColumn)
                     {
                         builder.Append(item.Name + ",");
                     }
+                    //builder.Append(" Validity ");
                     string SelectColumn = DelLastComma(builder.ToString());
                     builder.Clear();
                     DataTable mdmDT = new DataTable();
@@ -1587,6 +1821,7 @@ namespace Fisk.MDM.Business
                     }
                     if (mdmDT.Rows.Count > 0)
                     {
+                        bool addTitleCell = true;
                         DataRow rowValue = null;
                         for (int j = 0; j < mdmDT.Rows.Count; j++)
                         {
@@ -1594,8 +1829,67 @@ namespace Fisk.MDM.Business
                             IRow row = sheet.CreateRow(j + 1);
                             for (int a = 0; a < attributeColumn.Count; a++)
                             {
-                                row.CreateCell(a).SetCellValue(rowValue[attributeColumn[a].Name]?.ToString() ?? "");
+                                if (rowValue.Table.Columns.Contains(attributeColumn[a].Name))
+                                {
+                                    var v = rowValue[attributeColumn[a].Name]?.ToString() ?? "";
+                                    if (addTitleCell)
+                                    {
+                                        if (ForeignMdmDatas.ContainsKey(attributeColumn[a].Name))
+                                        {
+                                            var index = Title.LastCellNum;
+                                            Title.CreateCell(index).SetCellValue(attributeColumn[a].DisplayName + "名称");
+                                            if (!string.IsNullOrEmpty(v))
+                                            {
+                                                var Name = ForeignMdmDatas[attributeColumn[a].Name].Find(it => it.Code == v)?.Name ?? "";
+                                                row.CreateCell(a).SetCellValue(v);
+                                                row.CreateCell(index).SetCellValue(Name);
+                                            }
+                                            else
+                                            {
+                                                row.CreateCell(a).SetCellValue("");
+                                                row.CreateCell(index).SetCellValue("");
+                                            }
+                                            attributeColumn.Add(new { DisplayName = attributeColumn[a].Name + "名称", Name = "" });
+                                        }
+                                        else
+                                        {
+                                            if (!string.IsNullOrEmpty(v))
+                                            {
+                                                row.CreateCell(a).SetCellValue(rowValue[attributeColumn[a].Name]?.ToString() ?? "");
+                                            }
+                                            else
+                                            {
+                                                row.CreateCell(a).SetCellValue("");
+                                            }
+
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (!string.IsNullOrEmpty(v))
+                                        {
+                                            row.CreateCell(a).SetCellValue(rowValue[attributeColumn[a].Name]?.ToString() ?? "");
+                                        }
+                                        else
+                                        {
+                                            row.CreateCell(a).SetCellValue("");
+                                        }
+
+                                    }
+                                }
+                                else
+                                {
+                                    if (j != 0)
+                                    {
+                                        var colume = attributeColumn[a].DisplayName.Substring(0, attributeColumn[a].DisplayName.Length - 2);
+                                        var v = rowValue[colume].ToString();
+                                        var Name = ForeignMdmDatas[colume].Find(it => it.Code == v)?.Name ?? "";
+                                        row.CreateCell(a).SetCellValue(Name);
+                                    }
+
+                                }
                             }
+                            addTitleCell = false;
                         }
                     }
                 }
@@ -1648,12 +1942,7 @@ namespace Fisk.MDM.Business
                         UseHeaderRow = true // Use first row is ColumnName here :D
                     }
                 });
-                using (IDbConnection connection = DapperContext.Connection())
-                {
-                    string sqlstr = "insert into testlog(errorinfo) VALUES('tablecount: "+dataSet.Tables[0].Rows.Count+"')";
-                    connection.Query(sqlstr);
-                }
-                    if (dataSet.Tables.Count > 0)
+                if (dataSet.Tables.Count > 0)
                 {
                     var dtData = dataSet.Tables[0];
                     dtData.Columns.Add("batch_id");
@@ -1676,7 +1965,7 @@ namespace Fisk.MDM.Business
                         dr["CreateTime"] = DateTime.Now.ToStringYMD24HMS();
                         dr["UpdateUser"] = CurrentUser.UserAccount;
                         dr["UpdateTime"] = DateTime.Now.ToStringYMD24HMS();
-                        dr["Validity"] = dr["Validity"]?.ToString() ?? "1";
+                        //dr["Validity"] = dr["有效性"]?.ToString() ?? "1";
                     }
                     //获取表头
                     var entityId = this._dbContext.system_entity.AsNoTracking().Where(it => it.Name.ToLower() == entityName.ToLower()).Select(it => it.Id).FirstOrDefault();
@@ -1687,18 +1976,11 @@ namespace Fisk.MDM.Business
                         item.ColumnName = attrs.Find(it => it.DisplayName == item.ColumnName)?.Name ?? item.ColumnName;
                     }
                     var columns = dtData.Columns.Cast<DataColumn>().Select(colum => colum.ColumnName).ToList();
-                    using (IDbConnection connection = DapperContext.Connection())
-                    {
-                        foreach (var item in dtData.AsEnumerable())
-                        {
-                            connection.Query("insert into testlog(errorinfo) VALUES('tabledata: " + item["Name"] + "')");
-                        }
-                    }
                     //datatable转成CSV数据流
                     //Stream csvStream = DTToCsvStream(dtData);
                     // Do Something
                     //CSV数据流导入数据库
-                    int count = MysqlBulkLoad(DapperContext.Connection(), columns, entitydata.StageTable,dtData);
+                    int count = MysqlBulkLoad(DapperContext.Connection(), columns, entitydata.StageTable, dtData);
                     if (count > 0)
                     {
                         var para = new DynamicParameters();
@@ -1754,7 +2036,7 @@ namespace Fisk.MDM.Business
                                 //获取身份验证的token
                                 var authstr = Client_Get(param, "" + WorkFlowAPI + "/OAuth/token", "").Result;
                                 JObject authjobject = (JObject)JsonConvert.DeserializeObject(authstr);
-                                string tokenstr = ((Newtonsoft.Json.Linq.JValue)authjobject["authorization"]).Value.ToString();
+                                string tokenstr = ((JValue)authjobject["authorization"]).Value.ToString();
                                 foreach (var workflowitem in workflowCheckData)
                                 {
                                     //构造调用发起审批流程的api参数
@@ -1766,12 +2048,16 @@ namespace Fisk.MDM.Business
                                     //发起审批流程
                                     JObject resultpost = (JObject)JsonConvert.DeserializeObject(Client_Post(formData, workflowitem.WorkFlowApi, tokenstr).Result);
                                     string instanceID = string.Empty;
-                                    bool workflow = bool.Parse(((Newtonsoft.Json.Linq.JValue)resultpost["isok"]).Value.ToString());
+                                    bool workflow = bool.Parse(((JValue)resultpost["isok"]).Value.ToString());
+                                    instanceID = ((JValue)resultpost["entityID"]).Value.ToString();
                                     if (workflow)
                                     {
-                                        instanceID = ((Newtonsoft.Json.Linq.JValue)resultpost["entityID"]).Value.ToString();
-                                        string _up_stg_sqlstr = $"update {entitydata.StageTable} set WorkFlow_InstanceID='{instanceID}' where batch_id='{batch_id}' and WorkFlow_ProcessingType='{workflowitem.WorkFlow_ProcessingType}'";
-                                        connection.Execute(_up_stg_sqlstr);
+                                        connection.Execute($"update {entitydata.StageTable} set WorkFlow_InstanceID='{instanceID}' where batch_id='{batch_id}' and WorkFlow_ProcessingType='{workflowitem.WorkFlow_ProcessingType}'");
+                                    };
+                                    if (!workflow && instanceID == "-1")
+                                    {
+                                        isWorkFlow = false;
+                                        connection.Execute($"update {entitydata.StageTable} set WorkFlowstatus=0 where batch_id='{batch_id}' and WorkFlow_ProcessingType='{workflowitem.WorkFlow_ProcessingType}'");
                                     };
                                 }
                             }
@@ -2031,13 +2317,13 @@ namespace Fisk.MDM.Business
         /// <param name="Columns">表头</param>
         /// <param name="stream">数据流</param>
         /// <returns></returns>
-        public int MysqlBulkLoad(MySqlConnection _mySqlConnection, List<string> Columns, string TableName,DataTable dtdata)
+        public int MysqlBulkLoad(MySqlConnection _mySqlConnection, List<string> Columns, string TableName, DataTable dtdata)
         {
-            StringBuilder sCommand = new StringBuilder("INSERT INTO "+TableName+" ( ");
+            StringBuilder sCommand = new StringBuilder("INSERT INTO " + TableName + " ( ");
             StringBuilder filedstr = new StringBuilder();
             foreach (var colitem in Columns)
             {
-                filedstr.Append(colitem+",");
+                filedstr.Append(colitem + ",");
             }
             string filed = DelLastComma(filedstr.ToString());
             sCommand.Append(filed);
@@ -2048,12 +2334,12 @@ namespace Fisk.MDM.Business
                 for (int i = 0; i < dtdata.Rows.Count; i++)
                 {
                     StringBuilder colv = new StringBuilder("(");
-                    for (int r = 0; r< dtdata.Rows.Count; r++)
+                    for (int r = 0; r < Columns.Count; r++)
                     {
-                        colv.Append("'"+ MySqlHelper.EscapeString(dtdata.Rows[i][Columns[r]].ToString())+"',");
+                        colv.Append("'" + MySqlHelper.EscapeString(dtdata.Rows[i][Columns[r]].ToString()) + "',");
                     }
-                   string colstr= DelLastComma( colv.ToString())+")";
-                   Rows.Add(colstr);
+                    string colstr = DelLastComma(colv.ToString()) + ")";
+                    Rows.Add(colstr);
                 }
                 sCommand.Append(string.Join(",", Rows));
                 sCommand.Append(";");
@@ -2061,7 +2347,7 @@ namespace Fisk.MDM.Business
                 using (MySqlCommand myCmd = new MySqlCommand(sCommand.ToString(), mConnection))
                 {
                     myCmd.CommandType = CommandType.Text;
-                    result=myCmd.ExecuteNonQuery();
+                    result = myCmd.ExecuteNonQuery();
                 }
                 return result;
             }
@@ -2126,15 +2412,20 @@ namespace Fisk.MDM.Business
         /// <param name="workflow_instanceid"></param>
         /// <param name="entityid"></param>
         /// <returns></returns>
-        public object GetWorkFlow_ApproveData(string workflow_instanceid, string entityid)
+        public object GetWorkFlow_ApproveData(string workflow_instanceid, string entityid, int page, int rows)
         {
             try
             {
-                var entitydata = _dbContext.system_entity.Where(e => e.Id.ToString() == entityid).FirstOrDefault();
+                tableResult result = new tableResult();
+                var StageTable = _dbContext.system_entity.AsNoTracking().Where(e => e.Id.ToString() == entityid).Select(it => it.StageTable).FirstOrDefault(); ;
                 using (IDbConnection connection = DapperContext.Connection())
                 {
-                    var workflow_approvedata_query = connection.Query($"SELECT * from {entitydata.StageTable} where WorkFlow_InstanceID={workflow_instanceid} and ValidateStatus=0").ToList();
-                    return workflow_approvedata_query;
+                    var query = connection.Query($"SELECT * from {StageTable} where WorkFlow_InstanceID={workflow_instanceid} and ValidateStatus=1").AsQueryable();
+                    result.data = query.Skip((page - 1) * rows).Take(rows).ToList();
+                    result.total = query.Count();
+                    result.success = true;
+                    result.message = "查询成功";
+                    return result;
                 }
             }
             catch (Exception ex)
@@ -2156,11 +2447,15 @@ namespace Fisk.MDM.Business
                 var entitydata = _dbContext.system_entity.Where(e => e.Id.ToString() == entityid).FirstOrDefault();
                 using (IDbConnection connection = DapperContext.Connection())
                 {
+                    DataTable dt = new DataTable();
+                    IDataReader reader = connection.ExecuteReader($"SELECT  batch_id FROM {entitydata.StageTable}  WHERE WorkFlow_InstanceID='{workflow_instanceid}' limit 1");
+                    dt.Load(reader);
+                    connection.Execute($"update {entitydata.StageTable} set WorkFlowstatus=0 where batch_id= '{dt.Rows[0]["batch_id"]}'");
                     //进行数据导入 
                     var i_para = new DynamicParameters();
-                    i_para.Add("@entityid", entityid);
-                    i_para.Add("@WorkFlow_InstanceID", workflow_instanceid);
-                    var importresult = connection.Query(entitydata.DataImportProc, i_para, null, true, null, CommandType.StoredProcedure).FirstOrDefault();
+                    i_para.Add("@batchid", dt.Rows[0].Field<string>("batch_id"));
+                    //var importresult = connection.Query(entitydata.DataImportProc, i_para, null, true, null, CommandType.StoredProcedure).FirstOrDefault();
+                    connection.Execute(entitydata.DataImportProc, i_para, null, 18000, CommandType.StoredProcedure);
                     result.success = true;
                     result.message = " 操作成功";
                     return result;

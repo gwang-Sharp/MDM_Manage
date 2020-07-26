@@ -25,11 +25,9 @@ namespace Fisk.MDM.Business
     {
 
         private readonly MDMDBContext _dbContext;
-        private readonly SessionHelper helper;
-        public MasterData_Quality_Manage(MDMDBContext dbContext, IHttpContextAccessor httpContextAccessor)
+        public MasterData_Quality_Manage(MDMDBContext dbContext)
         {
             this._dbContext = dbContext;
-            helper = new SessionHelper(httpContextAccessor);
         }
         #region 数据维护 WG
         /// <summary>
@@ -43,7 +41,27 @@ namespace Fisk.MDM.Business
             tableResult result = new tableResult();
             try
             {
-                var query = this._dbContext.system_datamaintenance.AsNoTracking();
+                var query = from d in this._dbContext.system_datamaintenance.AsNoTracking()
+                            join e in this._dbContext.system_entity.AsNoTracking()
+                            on d.EntityID equals e.Id
+                            select new
+                            {
+                                d.Id,
+                                d.RuleName,
+                                d.RuleRemark,
+                                d.RuleType,
+                                d.Apiaddress,
+                                d.MergeAPI,
+                                d.CreateUser,
+                                d.CreateTime,
+                                d.UpdateUser,
+                                d.UpdateTime,
+                                d.AttributeID,
+                                d.BpmName,
+                                d.ApplyTitle,
+                                d.EntityID,
+                                e.Name
+                            };
                 result.success = true;
                 result.data = query.Skip((page - 1) * rows).Take(rows).ToList();
                 result.total = query.Count();
@@ -151,6 +169,7 @@ namespace Fisk.MDM.Business
                 has.UpdateTime = DateTime.Now;
                 has.UpdateUser = CurrentUser.UserAccount;
                 has.AttributeID = _Datamaintenance.AttributeID;
+                has.Apiaddress = _Datamaintenance.Apiaddress;
                 has.MergeAPI = _Datamaintenance.Apiaddress + "?bpmName=" + _Datamaintenance.BpmName + "&applyTitle=" + _Datamaintenance.ApplyTitle;
                 has.BpmName = _Datamaintenance.BpmName;
                 has.ApplyTitle = _Datamaintenance.ApplyTitle;
@@ -186,7 +205,7 @@ namespace Fisk.MDM.Business
             Result result = new Result();
             try
             {
-                var obj = this._dbContext.system_attribute.AsNoTracking().Where(it => it.StartTrace == "1" && it.EntityID == EntityID).Select(it => new { it.Name, it.Id }).ToList();
+                var obj = this._dbContext.system_attribute.AsNoTracking().Where(it => it.EntityID == EntityID).Select(it => new { it.Name, it.Id }).ToList();
                 result.success = true;
                 result.message = "查询成功";
                 result.data = obj;
@@ -502,7 +521,7 @@ namespace Fisk.MDM.Business
             List<string> threadid = new List<string>();
             //判断所有线程的执行情况，等待所有线程执行完毕；
             while (!IfRunOver)
-            { 
+            {
                 foreach (var item in threadPool)
                 {
                     if (!item.IsAlive)
@@ -1108,24 +1127,36 @@ namespace Fisk.MDM.Business
                         StringBuilder createProcSql = new StringBuilder();
                         createProcSql.Append(" CREATE PROCEDURE " + entityData.BusinessProc + "(IN batchid VARCHAR(100))");//创建实体(有参版本号)
                         createProcSql.Append(" BEGIN ");
+                        createProcSql.Append("  DECLARE batchid varchar(50);");
                         //createProcSql.Append(" SELECT * FROM " + entityData.StageTable);
                         string columnRule = ""; //循环添加Update 验证条件
                         foreach (var item in ruleData)
                         {
                             string tempSql = "";
-                            var attributeConfig = _dbContext.system_attribute.Where(e => e.Id == item.AttributeID).FirstOrDefault();
+                            var attributeConfig = _dbContext.system_attribute.Where(e => e.Id == item.AttributeID).Select(it => new { it.Name, it.DisplayName }).FirstOrDefault();
                             if (attributeConfig != null)
                             {
-                                tempSql += $@" UPDATE {entityData.StageTable} SET BissnessRuleErrorDesc = CONCAT( IFNULL(BissnessRuleErrorDesc,''), '{attributeConfig.DisplayName ?? attributeConfig.Name}错误  ' ) ,
+                                if (attributeConfig.Name.ToLower() == "code")
+                                {
+                                    if (item.Type == "自定义验证规则" && string.IsNullOrEmpty(item.Expression))
+                                    {
+                                        tempSql += $" select batch_id into batchid  from {entityData.StageTable} order by CreateTime desc  LIMIT 1;";
+                                        tempSql += $" call SP_MDM_Update_StoreCode(batchid); ";
+                                    }
+                                }
+                                else
+                                {
+                                    tempSql += $@" UPDATE {entityData.StageTable} SET BissnessRuleErrorDesc = CONCAT( IFNULL(BissnessRuleErrorDesc,''), '{attributeConfig.DisplayName ?? attributeConfig.Name}错误  ' ) ,
 	                           BissnessRuleStatus = '2' 
                                WHERE batch_id = batchid AND {attributeConfig.Name} NOT REGEXP '{item.Expression}' AND 
                                IFNULL(BissnessRuleErrorDesc,'') NOT LIKE '%{attributeConfig.DisplayName ?? attributeConfig.Name}错误%';  "; //正则验证 update语句
-                                if (item.Required == "true")
-                                {
-                                    tempSql += $@" UPDATE {entityData.StageTable} SET BissnessRuleErrorDesc = CONCAT(IFNULL(BissnessRuleErrorDesc,'') , '{attributeConfig.DisplayName ?? attributeConfig.Name}必填项为空  ' ) ,
+                                    if (item.Required == "true")
+                                    {
+                                        tempSql += $@" UPDATE {entityData.StageTable} SET BissnessRuleErrorDesc = CONCAT(IFNULL(BissnessRuleErrorDesc,'') , '{attributeConfig.DisplayName ?? attributeConfig.Name}必填项为空  ' ) ,
 	                           BissnessRuleStatus = '2' 
                                WHERE batch_id = batchid AND ( {attributeConfig.Name} IS NULL OR {attributeConfig.Name} = '' ) AND 
                                BissnessRuleErrorDesc NOT LIKE '%{attributeConfig.DisplayName ?? attributeConfig.Name}必填项为空%';  ";    //判断是否为必填
+                                    }
                                 }
                             }
                             columnRule += tempSql;
@@ -1188,6 +1219,7 @@ namespace Fisk.MDM.Business
                     RuleBase.UpdateTime = DateTime.Now;
                     if (_dbContext.SaveChanges() != 0)
                     {
+                        AttributeRuleRelease(RuleBase.ModelID.Value, RuleBase.EntityID.Value);
                         result.success = true;
                         result.message = "更新成功";
                     }
@@ -1281,6 +1313,7 @@ namespace Fisk.MDM.Business
                     DelRuleBase.UpdateTime = DateTime.Now;
                     if (_dbContext.SaveChanges() != 0)
                     {
+                        AttributeRuleRelease(DelRuleBase.ModelID.Value, DelRuleBase.EntityID.Value);
                         result.success = true;
                         result.message = "删除成功";
                     }

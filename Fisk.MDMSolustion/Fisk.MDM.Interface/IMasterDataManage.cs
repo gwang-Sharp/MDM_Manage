@@ -64,7 +64,7 @@ namespace Fisk.MDM.Interface
 
         byte[] DownError(string BatchID, string entityid);
 
-        object GetWorkFlow_ApproveData(string workflow_instanceid, string entityid);
+        object GetWorkFlow_ApproveData(string workflow_instanceid, string entityid,int page,int rows);
 
         object ApproveData_OK(string workflow_instanceid, string entityid);
 

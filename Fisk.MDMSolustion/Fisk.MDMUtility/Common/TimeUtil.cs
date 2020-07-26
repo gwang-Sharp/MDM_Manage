@@ -28,7 +28,7 @@ namespace Fisk.MDM.Utility.Common
         /// <returns>格式化后的时间字符串(yyyy-MM-dd HH:mm:ss)</returns>
         public static string ToStringYMD24HMS(this DateTime time)
         {
-            return time.ToString("yyyy-MM-dd hh:mm:ss");
+            return time.ToString("yyyy-MM-dd HH:mm:ss");
         }
     }
 }

@@ -14,11 +14,11 @@ namespace Fisk.MDMSolustion.Controllers
     public class LoginController : Controller
     {
         private readonly IMasterDataManage _masterdatamanage;
-        
-        public LoginController (IMasterDataManage MasterDataManage, IHttpContextAccessor httpContextAccessor)
+
+        public LoginController(IMasterDataManage MasterDataManage, IHttpContextAccessor httpContextAccessor)
         {
             _masterdatamanage = MasterDataManage;
-            new SessionHelper(httpContextAccessor);
+            //new SessionHelper(httpContextAccessor);
         }
 
         public IActionResult Index()
@@ -53,10 +53,11 @@ namespace Fisk.MDMSolustion.Controllers
         /// 登出  2020年4月23日22:41:56 Dennyhui
         /// </summary>
         /// <returns></returns>
-        public async Task<JsonResult> Logout()
+        public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            return Json(new { msg = "退出成功" });
+
+            return Redirect("/Login/Index");
         }
     }
 }

@@ -18,18 +18,18 @@ namespace Fisk.MDM.Utility.Middleware
 
         public async Task Invoke(HttpContext context)
         {
-            string url = context.Request.Path.Value;
-            if (!url.Contains(".jpg"))
+            string url = context.Request.Path.Value.ToLower();
+            if (!url.Contains(".jpg")|| !url.Contains(".png"))
             {
                 await _next(context);//走正常流程
             }
             else {
-                string urlReferrer = context.Request.Headers["Referer"];
+                string urlReferrer = context.Request.Headers["Referer"].ToString()?? context.Request.Headers["referer"].ToString();
                 if (string.IsNullOrWhiteSpace(urlReferrer))//直接访问
                 {
                     await this.SetForbiddenImage(context);//返回404图片
                 }
-                else if (!urlReferrer.Contains("localhost"))//非当前域名
+                else if (!urlReferrer.Contains("rfc-china.com"))//非当前域名
                 {
                     await this.SetForbiddenImage(context);//返回404图片
                 }
@@ -47,7 +47,7 @@ namespace Fisk.MDM.Utility.Middleware
         /// <returns></returns>
         private async Task SetForbiddenImage(HttpContext context)
         {
-            string defaultImagePath = "wwwroot/image/Forbidden.jpg";
+            string defaultImagePath = "wwwroot/Img/Home/error.jpg";
             string path = Path.Combine(Directory.GetCurrentDirectory(), defaultImagePath);
 
             FileStream fs = File.OpenRead(path);

@@ -32,6 +32,8 @@
 
 
     <div id="testcontent">
+        <input type="button" onclick=teststoredata() value="测试门店数据" style="margin-bottom:20px;" />
+        <br />
         <input type="button" onclick=muiltAdd() value="多条数据新增" style="margin-bottom:20px;" />
         <br />
         <input type="button" onclick=testsimilar() value="测试相似度计算" style="margin-bottom:20px;" />
@@ -130,6 +132,18 @@
             }
         });
     }
+    function teststoredata() {
+        $.ajax({
+            url: "/MDMApi/InitViewTable",
+            type:"post",
+            data: { "ModelType": "store", "where": "Validity='1' and 1=1","Page":1,"limit":10 },
+            success: function (data) {
+                console.log(data);
+            }, error: function (error) {
+                console.log(error);
+            }
+        });
+    }
     function testsimilar() {
         $.ajax({
             url: "/system/testsimilar",
@@ -142,7 +156,7 @@
         });
     }
     function muiltAdd() {
-        var jsonObj = { "EntityName": "test", "Data": [{ "batch_id": "20200428", "name": "ZBQ", "code": "20", "BissnessRuleStatus": "0", "ValidateStatus": "2" }, { "batch_id": "20200428", "name": "ZBQ11", "code": "201", "BissnessRuleStatus": "0", "ValidateStatus": "2" } ]};
+        var jsonObj ={ "EntityName": "customer", "Data": [{ "ValidateStatus": 0, "BissnessRuleStatus": 0, "WorkFlowStatus": 0, "batch_id": "", "Name": "测试Lay1", "Type": "5", "CustomerGroupCode": "1199", "SalesOrgCode": "844136461", "AdminOrgCode": "", "Remark": "", "DetailAddress": "", "Telephone": "", "BusinessLicenseNumber": "", "BusinessLicenseAddress": "", "WarehousePersonnelTelephone": "", "PurchasePersonnelTelephone": "", "DistributionWarehouseAddress": "", "FoodPermitNumber": "", "ShipToCode": "12345", "BUCode": "2", "Code": "2020063015512676883199", "CreateUser": "admin", "CreateTime": "2020-06-30 15:51:26", "UpdateUser": "admin", "UpdateTime": "2020-06-30 15:51:26", "Validity": 1 }] };
         $.post('/system/DataSaveEntityMember', { body: JSON.stringify(jsonObj) }, res => {
 
         });

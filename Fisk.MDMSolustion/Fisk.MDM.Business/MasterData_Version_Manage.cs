@@ -26,11 +26,9 @@ namespace Fisk.MDM.Business
     public class MasterData_Version_Manage : IMasterData_Version_Manage
     {
         private readonly MDMDBContext _dbContext;
-        private readonly SessionHelper helper;
-        public MasterData_Version_Manage(MDMDBContext dbContext, IHttpContextAccessor httpContextAccessor)
+        public MasterData_Version_Manage(MDMDBContext dbContext)
         {
             this._dbContext = dbContext;
-            helper = new SessionHelper(httpContextAccessor);
         }
         #region 版本管理 wg
         /// <summary>

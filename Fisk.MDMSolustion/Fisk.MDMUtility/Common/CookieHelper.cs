@@ -15,10 +15,11 @@ namespace Fisk.MDM.Utility.Common
     public class CookieHelper : Controller
     {
         private static IHttpContextAccessor _httpContextAccessor;
-        public CookieHelper(IHttpContextAccessor httpContextAccessor) {
-            _httpContextAccessor = httpContextAccessor;
+        internal static void Configure(IHttpContextAccessor accessor)
+        {
+            _httpContextAccessor = accessor;
         }
-        
+
         private static ISession _session => _httpContextAccessor.HttpContext.Session;
         /// <summary>
         /// 设置本地cookie

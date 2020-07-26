@@ -152,11 +152,6 @@ namespace Fisk.MDMSolustion.Controllers.System
         #endregion
 
 
-        public IActionResult Model()
-        {
-            return View();
-        }
-
         public IActionResult AuthorityCenter()
         {
 

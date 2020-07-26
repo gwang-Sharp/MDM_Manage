@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "HZjVhsgkrpluvAg3cx2THiLtz4i0glN1jhePFahHdSswpDhXWEEFcu4C2q4AidVoeIQ9QonufJfpnsaOSJ/rCw==",
+  "dgSpecHash": "MXoaYOiEc39PNJMJpPeKidsShuMrywqbj9YmbCLXMCUs2t/KRtjqDdpRS6u6TDlp2xco2OeumL4K58nS3Qh52Q==",
   "success": true,
   "projectFilePath": "F:\\FISK\\project\\MDM\\Fisk.MDMSolustion\\Fisk.MDM.Interface\\Fisk.MDM.Interface.csproj",
   "expectedPackageFiles": [
@@ -54,7 +54,7 @@
     "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder\\microsoft.codeanalysis.common\\2.8.0\\microsoft.codeanalysis.common.2.8.0.nupkg.sha512",
     "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder\\microsoft.codeanalysis.csharp\\2.8.0\\microsoft.codeanalysis.csharp.2.8.0.nupkg.sha512",
     "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder\\microsoft.codeanalysis.razor\\2.2.0\\microsoft.codeanalysis.razor.2.2.0.nupkg.sha512",
-    "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder\\microsoft.csharp\\4.5.0\\microsoft.csharp.4.5.0.nupkg.sha512",
+    "C:\\Users\\WangGang\\.nuget\\packages\\microsoft.csharp\\4.5.0\\microsoft.csharp.4.5.0.nupkg.sha512",
     "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder\\microsoft.dotnet.platformabstractions\\2.1.0\\microsoft.dotnet.platformabstractions.2.1.0.nupkg.sha512",
     "C:\\Users\\WangGang\\.nuget\\packages\\microsoft.entityframeworkcore\\3.1.0\\microsoft.entityframeworkcore.3.1.0.nupkg.sha512",
     "C:\\Users\\WangGang\\.nuget\\packages\\microsoft.entityframeworkcore.abstractions\\3.1.0\\microsoft.entityframeworkcore.abstractions.3.1.0.nupkg.sha512",

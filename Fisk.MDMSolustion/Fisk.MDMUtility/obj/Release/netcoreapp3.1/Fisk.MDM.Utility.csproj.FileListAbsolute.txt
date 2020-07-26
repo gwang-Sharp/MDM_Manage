@@ -6,3 +6,4 @@ F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMUtility\obj\Release\netcoreapp3.1\
 F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMUtility\obj\Release\netcoreapp3.1\Fisk.MDM.Utility.AssemblyInfo.cs
 F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMUtility\obj\Release\netcoreapp3.1\Fisk.MDM.Utility.dll
 F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMUtility\obj\Release\netcoreapp3.1\Fisk.MDM.Utility.pdb
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDMUtility\obj\Release\netcoreapp3.1\Fisk.MDM.Utility.csprojAssemblyReference.cache

@@ -8,9 +8,9 @@ F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDM.Interface\bin\Debug\netcoreapp3.1
 F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDM.Interface\bin\Debug\netcoreapp3.1\Fisk.MDM.ViewModel.pdb
 F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDM.Interface\bin\Debug\netcoreapp3.1\Fisk.MDM.Utility.pdb
 F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDM.Interface\obj\Debug\netcoreapp3.1\Fisk.MDM.Interface.csprojAssemblyReference.cache
-F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDM.Interface\obj\Debug\netcoreapp3.1\Fisk.MDM.Interface.csproj.CoreCompileInputs.cache
 F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDM.Interface\obj\Debug\netcoreapp3.1\Fisk.MDM.Interface.AssemblyInfoInputs.cache
 F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDM.Interface\obj\Debug\netcoreapp3.1\Fisk.MDM.Interface.AssemblyInfo.cs
+F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDM.Interface\obj\Debug\netcoreapp3.1\Fisk.MDM.Interface.csproj.CoreCompileInputs.cache
 F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDM.Interface\obj\Debug\netcoreapp3.1\Fisk.MDM.Interface.csproj.CopyComplete
 F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDM.Interface\obj\Debug\netcoreapp3.1\Fisk.MDM.Interface.dll
 F:\FISK\project\MDM\Fisk.MDMSolustion\Fisk.MDM.Interface\obj\Debug\netcoreapp3.1\Fisk.MDM.Interface.pdb

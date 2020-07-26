@@ -20,11 +20,9 @@ namespace Fisk.MDM.Business
     public class SystemManage: ISystemManage
     {
         private readonly MDMDBContext _dbContext;
-        private readonly SessionHelper helper;
-        public SystemManage(MDMDBContext dbContext, IHttpContextAccessor httpContextAccessor)
+        public SystemManage(MDMDBContext dbContext)
         {
             this._dbContext = dbContext;
-            helper = new SessionHelper(httpContextAccessor);
         }
 
         #region 角色管理 hhyang
@@ -1235,13 +1233,14 @@ namespace Fisk.MDM.Business
                         }
 
                         //先删除角色对应的菜单，重新添加
-                        var disNull = _dbContext.system_rolenavassignment.AsNoTracking().Where(e => e.Validity == "1" && e.RoleID == RoleID).ToList();
+                        var disNull = _dbContext.system_rolenavassignment.Where(e => e.Validity == "1" && e.RoleID == RoleID).ToList();
                         foreach (var item in disNull)
                         {
                             item.Validity = "0";
                             item.UpdateTime = DateTime.Now;
                             item.Updater = CurrentUser.UserAccount;
                         }
+                        int Count = _dbContext.SaveChanges();
                         List<system_rolenavassignment> modelList = new List<system_rolenavassignment>();
                         for (int i = 0; i < NavList.Count; i++)
                         {
